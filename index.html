@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macro Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <div class="logo">MacroTracker</div>
+    <nav>
+      <button class="nav-btn active" data-target="dashboard">Dashboard</button>
+      <button class="nav-btn" data-target="log-food">Log Food</button>
+      <button class="nav-btn" data-target="recipe-composer">Recipe</button>
+      <button class="nav-btn" data-target="library">Library</button>
+      <button class="nav-btn" data-target="settings">Settings</button>
+    </nav>
+  </header>
+
+  <div id="toast-container"></div>
+
+  <main id="app-container">
+    
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active">
+      <div class="flex-between mb-1">
+        <h1>Dashboard</h1>
+        <div class="date-controls">
+          <button id="btn-prev-day" class="btn-icon">❮</button>
+          <div class="date-display">
+            <span id="dash-date-display">Today</span>
+            <input type="date" id="dash-date">
+          </div>
+          <button id="btn-next-day" class="btn-icon">❯</button>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="macro-bar-container">
+          <div class="macro-label"><span>Calories</span> <span id="dash-cal-text">0 / 0</span></div>
+          <div class="progress-bg"><div class="progress-fill" id="dash-cal-bar"></div></div>
+        </div>
+        <div class="macro-bar-container">
+          <div class="macro-label"><span>Protein</span> <span id="dash-pro-text">0g / 0g</span></div>
+          <div class="progress-bg"><div class="progress-fill" id="dash-pro-bar"></div></div>
+        </div>
+        <div class="macro-bar-container">
+          <div class="macro-label"><span>Carbohydrates</span> <span id="dash-carb-text">0g / 0g</span></div>
+          <div class="progress-bg"><div class="progress-fill" id="dash-carb-bar"></div></div>
+        </div>
+        <div class="macro-bar-container mb-0">
+          <div class="macro-label"><span>Fat</span> <span id="dash-fat-text">0g / 0g</span></div>
+          <div class="progress-bg"><div class="progress-fill" id="dash-fat-bar"></div></div>
+        </div>
+      </div>
+
+      <h3 class="mt-1">Today's Logs</h3>
+      <div id="dash-log-list" class="list-container"></div>
+    </section>
+
+    <!-- LOG FOOD -->
+    <section id="log-food" class="page hidden">
+      <h1>Log Food</h1>
+      <div class="search-container mb-1">
+        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+          <input type="text" id="food-search" placeholder="Search foods (e.g. Chicken breast)..." autocomplete="off">
+          <span id="search-loader" class="loader hidden" style="position: absolute; right: 15px;">⏳</span>
+        </div>
+        <div id="search-dropdown" class="dropdown hidden"></div>
+      </div>
+
+      <div id="log-form-container" class="card">
+        <div class="flex-between mb-1">
+          <h3 id="form-title" style="margin: 0;">Quick Log</h3>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="date" id="log-date" class="input-inline">
+            <input type="time" id="log-time" class="input-inline">
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-top: 0;">
+          <div class="input-group full-width"><label>Food Name</label><input type="text" id="log-name"></div>
+          <div class="input-group"><label id="serving-size-label">Base Serving Size (g)</label><input type="number" id="log-serving-g" value="100"></div>
+          <div class="input-group"><label>Serving Unit Name (optional)</label><input type="text" id="log-serving-unit" placeholder="e.g. slice, cup, bowl"></div>
+          <div class="input-group"><label id="serving-multiplier-label">Servings</label><input type="number" id="log-servings" value="1" step="0.01"></div>
+          <div class="input-group"><label id="serving-total-g-label">Total Grams</label><input type="number" id="log-total-g" value="100" step="1"></div>
+          <div class="input-group"><label>Protein (g)</label><input type="number" id="log-protein" class="macro-input" value="0" step="0.1"></div>
+          <div class="input-group"><label>Carbs (g)</label><input type="number" id="log-carbs" class="macro-input" value="0" step="0.1"></div>
+          <div class="input-group"><label>Fat (g)</label><input type="number" id="log-fat" class="macro-input" value="0" step="0.1"></div>
+          <div class="input-group"><label>Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label><input type="number" id="log-calories" value="0"></div>
+        </div>
+
+        <button id="btn-toggle-micros" class="btn-link mt-1">Show Micronutrients ▾</button>
+        <div id="micros-panel" class="hidden mt-1 form-grid panel-transparent">
+          <div class="input-group"><label>Fiber (g)</label><input type="number" id="log-fiber" step="0.1" value="0"></div>
+          <div class="input-group"><label>Sugar (g)</label><input type="number" id="log-sugar" step="0.1" value="0"></div>
+          <div class="input-group"><label>Sodium (mg)</label><input type="number" id="log-sodium" step="1" value="0"></div>
+          <div class="input-group"><label>Saturated Fat (g)</label><input type="number" id="log-saturated-fat" step="0.1" value="0"></div>
+          <div class="input-group"><label>Cholesterol (mg)</label><input type="number" id="log-cholesterol" step="1" value="0"></div>
+          <div class="input-group"><label>Potassium (mg)</label><input type="number" id="log-potassium" step="1" value="0"></div>
+          <div class="input-group"><label>Vitamin A (ug)</label><input type="number" id="log-vitamin-a" step="1" value="0"></div>
+          <div class="input-group"><label>Vitamin C (mg)</label><input type="number" id="log-vitamin-c" step="0.1" value="0"></div>
+          <div class="input-group"><label>Vitamin D (ug)</label><input type="number" id="log-vitamin-d" step="0.1" value="0"></div>
+          <div class="input-group"><label>Calcium (mg)</label><input type="number" id="log-calcium" step="1" value="0"></div>
+          <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
+        </div>
+
+        <div class="flex-between mt-2">
+          <label class="custom-checkbox"><input type="checkbox" id="log-save-library"> Save to library</label>
+          <button id="btn-submit-log" class="btn">Log Food</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECIPE COMPOSER -->
+    <section id="recipe-composer" class="page hidden">
+      <h1>Recipe Composer</h1>
+      <div class="card">
+        <div class="form-grid" style="margin-top: 0;">
+          <div class="input-group full-width"><label>Recipe Name</label><input type="text" id="recipe-name" placeholder="e.g. Morning Coffee"></div>
+          <div class="input-group"><label>Serving Unit (optional)</label><input type="text" id="recipe-unit" placeholder="e.g. mug, portion"></div>
+          <div class="input-group"><label>Total Weight (g)</label><input type="number" id="recipe-total-g" readonly value="0"></div>
+        </div>
+        
+        <h3 class="mt-2">Add Ingredient</h3>
+        <div class="search-container mt-05 mb-1">
+          <input type="text" id="recipe-search" placeholder="Search ingredient..." autocomplete="off">
+          <div id="recipe-search-dropdown" class="dropdown hidden"></div>
+        </div>
+
+        <h3 class="mt-2">Ingredients</h3>
+        <div id="recipe-ingredient-list" class="list-container"></div>
+
+        <div class="mt-2 panel-transparent">
+          <div class="flex-between mb-1">
+            <h4 style="margin: 0;">Recipe Total Nutrition</h4>
+            <button id="btn-view-recipe-micros" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px;">View Full Facts</button>
+          </div>
+          <div class="macro-stats">
+            <div class="stat-col"><span class="stat-label">Calories</span><span class="stat-value cals" id="recipe-cal">0</span></div>
+            <div class="stat-col"><span class="stat-label">Protein</span><span class="stat-value" id="recipe-pro">0g</span></div>
+            <div class="stat-col"><span class="stat-label">Carbs</span><span class="stat-value" id="recipe-carb">0g</span></div>
+            <div class="stat-col"><span class="stat-label">Fat</span><span class="stat-value" id="recipe-fat">0g</span></div>
+          </div>
+        </div>
+        
+        <button id="btn-save-recipe" class="btn mt-2 full-width">Save Recipe to Library</button>
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section id="library" class="page hidden">
+      <h1>Food Library</h1>
+      <input type="text" id="library-search" class="mb-1" placeholder="Search library...">
+      <div id="library-list" class="list-container"></div>
+    </section>
+
+    <!-- SETTINGS / PROFILE -->
+    <section id="settings" class="page hidden">
+      <h1>Settings & Profile</h1>
+      
+      <div class="card">
+        <h3>Target Goals Calculator</h3>
+        <div class="form-grid mt-1">
+          <div class="input-group full-width">
+            <label>Calculate Method</label>
+            <select id="goal-calc-method">
+              <option value="calculator">Mifflin-St Jeor Calculator</option>
+              <option value="manual">Manual Entry</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="smart-calc-panel" class="form-grid mt-1">
+          <div class="input-group"><label>Age (years)</label><input type="number" id="calc-age" value="25"></div>
+          <div class="input-group"><label>Gender</label><select id="calc-gender"><option value="male">Male</option><option value="female">Female</option></select></div>
+          <div class="input-group"><label>Height (cm)</label><input type="number" id="calc-height" value="175"></div>
+          <div class="input-group"><label>Current Weight (kg)</label><input type="number" id="calc-weight" value="70"></div>
+          <div class="input-group"><label>Activity Level</label><select id="calc-activity"><option value="1.2">Sedentary (Little/no exercise)</option><option value="1.375">Lightly Active (1-3 days/wk)</option><option value="1.55">Moderately Active (3-5 days/wk)</option><option value="1.725">Very Active (6-7 days/wk)</option><option value="1.9">Athlete (Hard daily exercise)</option></select></div>
+          <div class="input-group"><label>Weekly Goal Preset</label><select id="calc-goal"><option value="-500">Lose 2 kg/month (-500 kcal)</option><option value="-250">Lose 1 kg/month (-250 kcal)</option><option value="0">Maintain Weight</option><option value="250">Gain 1 kg/month (+250 kcal)</option><option value="500">Gain 2 kg/month (+500 kcal)</option></select></div>
+        </div>
+
+        <div class="mt-2 panel-transparent">
+          <h4 id="calc-preview-title">Computed Daily Targets</h4>
+          <div class="form-grid" style="margin-top: 0.5rem;">
+            <div class="input-group"><label>Target Calories</label><input type="number" id="prof-cal"></div>
+            <div class="input-group"><label>Target Protein (g)</label><input type="number" id="prof-pro"></div>
+            <div class="input-group"><label>Target Carbs (g)</label><input type="number" id="prof-carb"></div>
+            <div class="input-group"><label>Target Fat (g)</label><input type="number" id="prof-fat"></div>
+          </div>
+          <div id="extreme-diet-warning" class="hidden text-sm mt-1" style="color: var(--warning); border-left: 3px solid var(--warning); padding-left: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 0 4px 4px 0; padding: 0.5rem 1rem;">
+            ⚠ Warning: Your target is below the recommended safety minimum.
+          </div>
+        </div>
+        <button id="btn-save-profile" class="btn mt-1 full-width">Save Computed Targets</button>
+      </div>
+
+      <div class="card">
+        <h3>Weight Tracker</h3>
+        <div class="flex-between gap-1 mt-1 mb-2">
+          <div class="input-group" style="flex: 1;"><label>Log Today's Weight (kg)</label><input type="number" id="weight-input" step="0.1"></div>
+          <button id="btn-log-weight" class="btn" style="margin-top: 1.4rem;">Log Weight</button>
+        </div>
+        <canvas id="weightChart" width="400" height="200"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Data Management</h3>
+        <div class="input-group mb-1 mt-1">
+          <label>USDA API Key</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="settings-api-key" style="flex: 1;">
+            <button id="btn-save-settings" class="btn">Save Key</button>
+          </div>
+        </div>
+        <div class="input-group mb-1">
+          <label class="custom-checkbox">
+            <input type="checkbox" id="settings-include-branded">
+            Include Branded Foods in USDA Search Results
+          </label>
+        </div>
+        <hr class="mb-1 mt-1" style="border: 0; border-top: 1px solid var(--border);">
+        <div style="display: flex; gap: 1rem;">
+          <button id="btn-export" class="btn-secondary" style="padding: 0.5rem 1rem;">Export Backup (JSON)</button>
+          <label class="btn-secondary" style="padding: 0.5rem 1rem; cursor: pointer; text-align: center;">
+            Import Backup <input type="file" id="btn-import" accept=".json" hidden>
+          </label>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Recipe Weight Modal -->
+  <div id="recipe-weight-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 350px;">
+      <h3 id="recipe-weight-title">Ingredient Amount</h3>
+      <p class="text-muted text-sm mb-1" id="recipe-weight-subtitle">Specify weight used in grams.</p>
+      <input type="number" id="recipe-weight-input" value="100" min="1">
+      <div class="flex-between mt-2">
+        <button id="btn-cancel-recipe-weight" class="btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
+        <button id="btn-save-recipe-weight" class="btn">Add Ingredient</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Nutrition Facts Read-Only Modal -->
+  <div id="full-nutrition-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px;">
+      <h2>Recipe Nutrition Facts</h2>
+      <p class="text-muted text-sm">Aggregated nutrition details for the recipe.</p>
+      <div class="form-grid text-sm mt-1" style="max-height: 350px; overflow-y: auto;">
+        <div class="input-group"><label>Calories</label><input type="text" id="nut-calories" readonly></div>
+        <div class="input-group"><label>Protein (g)</label><input type="text" id="nut-protein" readonly></div>
+        <div class="input-group"><label>Carbohydrates (g)</label><input type="text" id="nut-carbs" readonly></div>
+        <div class="input-group"><label>Fat (g)</label><input type="text" id="nut-fat" readonly></div>
+        <div class="input-group"><label>Fiber (g)</label><input type="text" id="nut-fiber" readonly></div>
+        <div class="input-group"><label>Sugar (g)</label><input type="text" id="nut-sugar" readonly></div>
+        <div class="input-group"><label>Sodium (mg)</label><input type="text" id="nut-sodium" readonly></div>
+        <div class="input-group"><label>Saturated Fat (g)</label><input type="text" id="nut-satfat" readonly></div>
+        <div class="input-group"><label>Cholesterol (mg)</label><input type="text" id="nut-chol" readonly></div>
+        <div class="input-group"><label>Potassium (mg)</label><input type="text" id="nut-potassium" readonly></div>
+        <div class="input-group"><label>Vitamin A (ug)</label><input type="text" id="nut-vita" readonly></div>
+        <div class="input-group"><label>Vitamin C (mg)</label><input type="text" id="nut-vitc" readonly></div>
+        <div class="input-group"><label>Vitamin D (ug)</label><input type="text" id="nut-vitd" readonly></div>
+        <div class="input-group"><label>Calcium (mg)</label><input type="text" id="nut-calcium" readonly></div>
+        <div class="input-group"><label>Iron (mg)</label><input type="text" id="nut-iron" readonly></div>
+      </div>
+      <button id="btn-close-nutrition-modal" class="btn mt-2 full-width">Close</button>
+    </div>
+  </div>
+
+  <!-- Library Edit Modal -->
+  <div id="library-edit-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Edit Library Item</h2>
+      <div class="form-grid">
+        <div class="input-group full-width"><label>Food Name</label><input type="text" id="edit-lib-name"></div>
+        <div class="input-group"><label>Base Serving Size (g)</label><input type="number" id="edit-lib-serving-g"></div>
+        <div class="input-group"><label>Serving Unit Name</label><input type="text" id="edit-lib-serving-unit" placeholder="e.g. slice, cup"></div>
+        <div class="input-group"><label>Protein (g)</label><input type="number" id="edit-lib-protein" step="0.1"></div>
+        <div class="input-group"><label>Carbohydrates (g)</label><input type="number" id="edit-lib-carbs" step="0.1"></div>
+        <div class="input-group"><label>Fat (g)</label><input type="number" id="edit-lib-fat" step="0.1"></div>
+        <div class="input-group"><label>Calories</label><input type="number" id="edit-lib-calories"></div>
+      </div>
+
+      <button id="btn-toggle-edit-micros" class="btn-link mt-1">Show Advanced Micronutrients ▾</button>
+      <div id="edit-micros-panel" class="hidden form-grid text-sm mt-1 panel-transparent">
+        <div class="input-group"><label>Fiber (g)</label><input type="number" id="edit-lib-fiber" step="0.1"></div>
+        <div class="input-group"><label>Sugar (g)</label><input type="number" id="edit-lib-sugar" step="0.1"></div>
+        <div class="input-group"><label>Sodium (mg)</label><input type="number" id="edit-lib-sodium" step="1"></div>
+        <div class="input-group"><label>Saturated Fat (g)</label><input type="number" id="edit-lib-sat-fat" step="0.1"></div>
+        <div class="input-group"><label>Cholesterol (mg)</label><input type="number" id="edit-lib-chol" step="1"></div>
+        <div class="input-group"><label>Potassium (mg)</label><input type="number" id="edit-lib-potassium" step="1"></div>
+        <div class="input-group"><label>Vitamin A (ug)</label><input type="number" id="edit-lib-vit-a" step="1"></div>
+        <div class="input-group"><label>Vitamin C (mg)</label><input type="number" id="edit-lib-vit-c" step="0.1"></div>
+        <div class="input-group"><label>Vitamin D (ug)</label><input type="number" id="edit-lib-vit-d" step="0.1"></div>
+        <div class="input-group"><label>Calcium (mg)</label><input type="number" id="edit-lib-calcium" step="1"></div>
+        <div class="input-group"><label>Iron (mg)</label><input type="number" id="edit-lib-iron" step="0.1"></div>
+      </div>
+
+      <div class="flex-between mt-2 pt-1" style="border-top: 1px solid var(--border);">
+        <button id="btn-cancel-lib-edit" class="btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
+        <button id="btn-save-lib-edit" class="btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="confirm-modal" class="modal hidden" style="z-index: 2100;">
+    <div class="modal-content" style="max-width: 400px; padding: 1.75rem;">
+      <h3 id="confirm-title" style="margin-bottom: 0.5rem;">Confirm Action</h3>
+      <p id="confirm-message" class="text-muted text-sm mb-2" style="line-height: 1.4;">Are you sure you want to proceed?</p>
+      <div class="flex-between" style="margin-top: 1.5rem; gap: 1rem;">
+        <button id="btn-confirm-cancel" class="btn-secondary" style="padding: 0.5rem 1.25rem; flex: 1;">Cancel</button>
+        <button id="btn-confirm-ok" class="btn" style="padding: 0.5rem 1.25rem; flex: 1;">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
