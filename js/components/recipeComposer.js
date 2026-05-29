@@ -17,34 +17,88 @@ export function initRecipeComposer() {
 
   let ingredients = [];
   let searchTimeout = null;
+  let abortController = null;
   let targetFoodForWeight = null;
   let editingRecipeId = null;
+  let activeDropdownIndex = -1;
+
+  // --- KEYBOARD NAVIGATION FOR SEARCH DROPDOWN ---
+  searchInput.addEventListener('keydown', (e) => {
+    const items = dropdown.querySelectorAll('.dropdown-item');
+    if (!items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
+      updateDropdownHighlight(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
+      updateDropdownHighlight(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const targetIdx = activeDropdownIndex === -1 ? 0 : activeDropdownIndex;
+      if (items[targetIdx]) {
+        items[targetIdx].click();
+      }
+    } else if (e.key === 'Escape') {
+      clearDropdown();
+    }
+  });
+
+  function updateDropdownHighlight(items) {
+    items.forEach((item, index) => {
+      if (index === activeDropdownIndex) {
+        item.classList.add('kbd-active');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('kbd-active');
+      }
+    });
+  }
 
   searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     const query = e.target.value.trim();
     if (query.length < 2) return dropdown.classList.add('hidden');
 
+    if (abortController) abortController.abort(); // Cancel pending network fetches
+
     searchTimeout = setTimeout(async () => {
+      abortController = new AbortController();
       const history = await db.foods.filter(f => f.name.toLowerCase().includes(query.toLowerCase()) && f.source !== 'composite').toArray();
-      const usda = await searchUSDA(query);
+      const usda = await searchUSDA(query, abortController.signal);
       
       dropdown.innerHTML = '';
+      activeDropdownIndex = -1; 
+      
       history.forEach(food => addDropdownItem(food.name, 'History', () => openWeightModal(food)));
       usda.forEach(food => addDropdownItem(food.description, 'USDA', async () => openWeightModal(await getUSDAFoodDetails(food.fdcId))));
       
       if (history.length > 0 || usda.length > 0) {
         dropdown.classList.remove('hidden');
-        dropdown.scrollTop = 0; // Fixes scrollbar not resetting
+        dropdown.scrollTop = 0; 
       }
     }, 400);
   });
+
+  function clearDropdown() {
+    clearTimeout(searchTimeout);
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    dropdown.innerHTML = '';
+    dropdown.classList.add('hidden');
+    dropdown.scrollTop = 0;
+    activeDropdownIndex = -1;
+  }
 
   function addDropdownItem(name, type, onClick) {
     const div = document.createElement('div');
     div.className = 'dropdown-item';
     div.innerHTML = `<span>${name}</span> <span class="badge ${type.toLowerCase()}">${type}</span>`;
-    div.onclick = () => { onClick(); dropdown.classList.add('hidden'); searchInput.value = ''; };
+    div.onclick = () => { onClick(); clearDropdown(); searchInput.value = ''; };
     dropdown.appendChild(div);
   }
 

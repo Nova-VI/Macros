@@ -8,14 +8,14 @@ const NUTRIENT_IDS = {
   vit_a: 1106, vit_c: 1162, vit_d: 1114, calcium: 1087, iron: 1089
 };
 
-export async function searchUSDA(query) {
+export async function searchUSDA(query, signal) {
   const apiKey = getApiKey();
   if (!apiKey) return [];
   try {
     const includeBranded = getIncludeBranded();
     const dataTypes = includeBranded ? 'Foundation,SR%20Legacy,Branded' : 'Foundation,SR%20Legacy';
     
-    const res = await fetch(`${BASE_URL}/foods/search?query=${encodeURIComponent(query)}&dataType=${dataTypes}&requireAllWords=true&pageSize=15&api_key=${apiKey}`);
+    const res = await fetch(`${BASE_URL}/foods/search?query=${encodeURIComponent(query)}&dataType=${dataTypes}&requireAllWords=true&pageSize=15&api_key=${apiKey}`, { signal });
     if (!res.ok) throw new Error("USDA Query Failed.");
     const data = await res.json();
     let results = data.foods || [];
@@ -34,7 +34,11 @@ export async function searchUSDA(query) {
 
     return results;
   } catch (error) {
-    console.error("USDA Search Error:", error);
+    if (error.name === 'AbortError') {
+      console.log("USDA fetch aborted cleanly.");
+    } else {
+      console.error("USDA Search Error:", error);
+    }
     return [];
   }
 }
