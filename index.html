@@ -38,22 +38,46 @@
         </div>
       </div>
       
-      <div class="card">
-        <div class="macro-bar-container">
-          <div class="macro-label"><span>Calories</span> <span id="dash-cal-text">0 / 0</span></div>
+      <div class="card mb-2">
+        <div class="flex-between mb-1">
+          <h3 style="margin: 0;">Daily Overview</h3>
+          <button id="btn-toggle-view" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Show Remaining</button>
+        </div>
+        
+        <!-- Calories Progress Bar -->
+        <div class="macro-bar-container mb-2">
+          <div class="macro-label"><span>Calories</span> <span id="dash-cal-text">0 / 0 kcal</span></div>
           <div class="progress-bg"><div class="progress-fill" id="dash-cal-bar"></div></div>
         </div>
-        <div class="macro-bar-container">
-          <div class="macro-label"><span>Protein</span> <span id="dash-pro-text">0g / 0g</span></div>
-          <div class="progress-bg"><div class="progress-fill" id="dash-pro-bar"></div></div>
-        </div>
-        <div class="macro-bar-container">
-          <div class="macro-label"><span>Carbohydrates</span> <span id="dash-carb-text">0g / 0g</span></div>
-          <div class="progress-bg"><div class="progress-fill" id="dash-carb-bar"></div></div>
-        </div>
-        <div class="macro-bar-container mb-0">
-          <div class="macro-label"><span>Fat</span> <span id="dash-fat-text">0g / 0g</span></div>
-          <div class="progress-bg"><div class="progress-fill" id="dash-fat-bar"></div></div>
+
+        <!-- Macro Doughnut Chart & Custom Fill Legends -->
+        <div class="macro-pie-container">
+          <div class="chart-wrapper">
+            <canvas id="macroPieChart"></canvas>
+          </div>
+          <div class="macro-stats-vertical">
+            <div class="macro-stat-row">
+              <div class="macro-stat-fill" id="dash-pro-fill" style="background-color: rgba(16, 185, 129, 0.25);"></div>
+              <div style="position:relative; z-index:1; display:flex; align-items:center; gap:0.6rem; flex:1;">
+                <div class="macro-dot" style="background: #10b981;"></div> <span style="color: var(--text-main); font-weight:500;">Protein</span>
+              </div>
+              <div id="dash-pro-text" class="stat-value" style="position:relative; z-index:1; font-size: 0.9rem;">0g / 0g</div>
+            </div>
+            <div class="macro-stat-row">
+              <div class="macro-stat-fill" id="dash-carb-fill" style="background-color: rgba(59, 130, 246, 0.25);"></div>
+              <div style="position:relative; z-index:1; display:flex; align-items:center; gap:0.6rem; flex:1;">
+                <div class="macro-dot" style="background: #3b82f6;"></div> <span style="color: var(--text-main); font-weight:500;">Carbs</span>
+              </div>
+              <div id="dash-carb-text" class="stat-value" style="position:relative; z-index:1; font-size: 0.9rem;">0g / 0g</div>
+            </div>
+            <div class="macro-stat-row">
+              <div class="macro-stat-fill" id="dash-fat-fill" style="background-color: rgba(245, 158, 11, 0.25);"></div>
+              <div style="position:relative; z-index:1; display:flex; align-items:center; gap:0.6rem; flex:1;">
+                <div class="macro-dot" style="background: #f59e0b;"></div> <span style="color: var(--text-main); font-weight:500;">Fat</span>
+              </div>
+              <div id="dash-fat-text" class="stat-value" style="position:relative; z-index:1; font-size: 0.9rem;">0g / 0g</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -61,11 +85,10 @@
       <div id="dash-log-list" class="list-container"></div>
     </section>
 
-    <!-- LOG FOOD (NOW WITH LEFT SIDEBAR EXCLUSIVELY SYNCED IN HEIGHT) -->
+    <!-- LOG FOOD (SIDEBAR) -->
     <section id="log-food" class="page hidden">
       <h1>Log Food</h1>
       
-      <!-- Full-Width search bar above the grids -->
       <div class="search-container mb-1">
         <div style="position: relative; display: flex; align-items: center; width: 100%;">
           <input type="text" id="food-search" placeholder="Search foods (e.g. Chicken breast)..." autocomplete="off">
@@ -76,7 +99,7 @@
 
       <div class="layout-sidebar">
         
-        <!-- Left Column: Shortcuts Sidebar Panel -->
+        <!-- Shortcuts Sidebar -->
         <div class="sidebar">
           <div class="card p-1">
             <h4 style="display:flex; align-items:center; gap: 5px; color: #fbbf24;">★ Favorites</h4>
@@ -88,7 +111,7 @@
           </div>
         </div>
 
-        <!-- Right Column: Main Log Food Form -->
+        <!-- Main Form -->
         <div id="log-form-container" class="card" style="margin-bottom: 0;">
           <div class="flex-between mb-1">
             <h3 id="form-title" style="margin: 0;">Quick Log</h3>

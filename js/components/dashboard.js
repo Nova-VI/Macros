@@ -4,13 +4,23 @@ export function initDashboard() {
   const dateInput = document.getElementById('dash-date');
   const dateDisplay = document.getElementById('dash-date-display');
   const logList = document.getElementById('dash-log-list');
+  const toggleViewBtn = document.getElementById('btn-toggle-view');
 
   const els = {
     calTxt: document.getElementById('dash-cal-text'), calBar: document.getElementById('dash-cal-bar'),
-    proTxt: document.getElementById('dash-pro-text'), proBar: document.getElementById('dash-pro-bar'),
-    carbTxt: document.getElementById('dash-carb-text'), carbBar: document.getElementById('dash-carb-bar'),
-    fatTxt: document.getElementById('dash-fat-text'), fatBar: document.getElementById('dash-fat-bar'),
+    proTxt: document.getElementById('dash-pro-text'), proFill: document.getElementById('dash-pro-fill'),
+    carbTxt: document.getElementById('dash-carb-text'), carbFill: document.getElementById('dash-carb-fill'),
+    fatTxt: document.getElementById('dash-fat-text'), fatFill: document.getElementById('dash-fat-fill'),
   };
+
+  let displayMode = 'consumed'; 
+  let macroChartInstance = null;
+
+  toggleViewBtn.addEventListener('click', (e) => {
+    displayMode = displayMode === 'consumed' ? 'remaining' : 'consumed';
+    e.target.innerText = displayMode === 'consumed' ? 'Show Remaining' : 'Show Consumed';
+    renderDashboard();
+  });
 
   function setToday() {
     dateInput.value = new Date().toISOString().split('T')[0];
@@ -33,13 +43,22 @@ export function initDashboard() {
 
   dateInput.addEventListener('change', updateDateDisplay);
   
-  // Make the text beautifully clickable via modern JS API fallback
   dateDisplay.addEventListener('click', () => {
     try { dateInput.showPicker(); } catch (e) { dateInput.focus(); }
   });
 
   document.getElementById('btn-prev-day').addEventListener('click', () => modifyDate(-1));
   document.getElementById('btn-next-day').addEventListener('click', () => modifyDate(1));
+
+  function formatText(current, max, unit) {
+    if (displayMode === 'consumed') {
+      return `${Math.round(current)}${unit} / ${Math.round(max)}${unit}`;
+    } else {
+      const diff = Math.round(max - current);
+      if (diff >= 0) return `${diff}${unit} left`;
+      else return `${Math.abs(diff)}${unit} over`;
+    }
+  }
 
   async function renderDashboard() {
     const selectedDate = dateInput.value;
@@ -50,7 +69,6 @@ export function initDashboard() {
       db.logs.where('date').equals(selectedDate).toArray()
     ]);
 
-    // SORT LOGS: Oldest to Most Recent
     logs.sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at));
 
     const totals = { cal: 0, pro: 0, carb: 0, fat: 0 };
@@ -61,11 +79,56 @@ export function initDashboard() {
 
     const goals = profile || { target_calories: 2000, target_protein_g: 150, target_carbs_g: 200, target_fat_g: 65 };
 
-    updateBar(els.calBar, els.calTxt, totals.cal, goals.target_calories, 'kcal');
-    updateBar(els.proBar, els.proTxt, totals.pro, goals.target_protein_g, 'g');
-    updateBar(els.carbBar, els.carbTxt, totals.carb, goals.target_carbs_g, 'g');
-    updateBar(els.fatBar, els.fatTxt, totals.fat, goals.target_fat_g, 'g');
+    // Linear Bar just for Calories
+    els.calTxt.innerText = formatText(totals.cal, goals.target_calories, 'kcal');
+    const calPercent = Math.min((totals.cal / Math.max(1, goals.target_calories)) * 100, 100);
+    els.calBar.style.width = `${calPercent}%`;
+    els.calBar.classList.remove('warning', 'danger');
+    if (totals.cal > goals.target_calories) els.calBar.classList.add('danger');
+    else if (calPercent >= 90) els.calBar.classList.add('warning');
 
+    // Text & Custom Fill Bars for Macros
+    els.proTxt.innerText = formatText(totals.pro, goals.target_protein_g, 'g');
+    const proPercent = Math.min((totals.pro / Math.max(1, goals.target_protein_g)) * 100, 100);
+    els.proFill.style.width = `${proPercent}%`;
+
+    els.carbTxt.innerText = formatText(totals.carb, goals.target_carbs_g, 'g');
+    const carbPercent = Math.min((totals.carb / Math.max(1, goals.target_carbs_g)) * 100, 100);
+    els.carbFill.style.width = `${carbPercent}%`;
+
+    els.fatTxt.innerText = formatText(totals.fat, goals.target_fat_g, 'g');
+    const fatPercent = Math.min((totals.fat / Math.max(1, goals.target_fat_g)) * 100, 100);
+    els.fatFill.style.width = `${fatPercent}%`;
+
+    // Chart.js Doughnut
+    const ctx = document.getElementById('macroPieChart').getContext('2d');
+    if (macroChartInstance) macroChartInstance.destroy();
+
+    const hasData = totals.pro > 0 || totals.carb > 0 || totals.fat > 0;
+
+    macroChartInstance = new window.Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: hasData ? ['Protein', 'Carbs', 'Fat'] : ['No Data'],
+        datasets: [{
+          data: hasData ? [totals.pro, totals.carb, totals.fat] : [1],
+          backgroundColor: hasData ? ['#10b981', '#3b82f6', '#f59e0b'] : ['#374151'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '78%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: hasData }
+        }
+      }
+    });
+
+    // Render Logs List
     logList.innerHTML = '';
     if (logs.length === 0) {
       logList.innerHTML = `<p class="text-muted text-sm text-center" style="padding: 20px 0;">No food logged yet for this day.</p>`;
@@ -77,8 +140,6 @@ export function initDashboard() {
       item.className = 'list-item';
       
       const micros = log.micros || {};
-      
-      // Pluralize serving unit gracefully
       let servingUnit = '';
       if (log.serving_name) {
         servingUnit = log.servings === 1 ? log.serving_name : (log.serving_name.endsWith('s') ? log.serving_name : `${log.serving_name}s`);
@@ -138,15 +199,6 @@ export function initDashboard() {
         renderDashboard();
       });
     });
-  }
-
-  function updateBar(barEl, txtEl, current, max, unit) {
-    const percent = Math.min((current / max) * 100, 100);
-    txtEl.innerText = `${Math.round(current)}${unit} / ${Math.round(max)}${unit}`;
-    barEl.style.width = `${percent}%`;
-    barEl.classList.remove('warning', 'danger');
-    if (current > max) barEl.classList.add('danger');
-    else if (percent >= 90) barEl.classList.add('warning');
   }
 
   return { renderDashboard, resetDate: setToday };
