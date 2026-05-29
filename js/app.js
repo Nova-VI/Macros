@@ -24,7 +24,6 @@ window.showToast = function(message, type = 'success') {
   }, 2600);
 };
 
-// Sleek asynchronous modal replacement for window.confirm
 window.customConfirm = function(title, message, isDanger = false) {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirm-modal');
@@ -71,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast("USDA Access Granted!"); window.location.reload(); 
       } else { window.showToast("API Key invalid.", "error"); }
     });
-  } else if (apiKey) { 
+  } else if (apiKey && modal) { 
     document.getElementById('settings-api-key').value = apiKey; 
   }
 
@@ -96,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (targetPage) { targetPage.classList.remove('hidden'); targetPage.classList.add('active'); }
       
       if (targetId === 'dashboard') { dashboard.resetDate(); dashboard.renderDashboard(); }
-      if (targetId === 'log-food') { logFood.resetForm(); document.getElementById('food-search').value = ''; }
+      if (targetId === 'log-food') { logFood.resetForm(); document.getElementById('food-search').value = ''; logFood.refreshShortcuts(); }
       if (targetId === 'recipe-composer') { recipeComposer.resetForm(); }
       if (targetId === 'library') { document.getElementById('library-search').value = ''; library.renderLibrary(); }
       if (targetId === 'settings') { settings.loadProfile(); setTimeout(() => settings.renderChart(), 100); }

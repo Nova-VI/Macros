@@ -11,6 +11,7 @@ export function initLogFood(dashboardRef) {
   
   const logDateInput = document.getElementById('log-date');
   const logTimeInput = document.getElementById('log-time');
+  const formContainer = document.getElementById('log-form-container');
   
   const els = {
     name: document.getElementById('log-name'),
@@ -36,6 +37,67 @@ export function initLogFood(dashboardRef) {
   let currentFood = null; 
   let manualCalories = false;
   let editingLogId = null; 
+
+  // --- KEYBOARD SHORTCUTS FOR LOGGING ---
+  formContainer.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Stop standard form submission
+      
+      // Ctrl + Enter: Save to library and log, Enter: Log only
+      if (!els.saveLibrary.disabled) {
+        els.saveLibrary.checked = e.ctrlKey;
+      }
+      els.submitBtn.click();
+    }
+  });
+
+  // --- SHORTCUTS SYSTEM ---
+  async function renderShortcuts() {
+    const [allFoods, allLogs] = await Promise.all([
+      db.foods.toArray(),
+      db.logs.toArray()
+    ]);
+
+    const counts = {};
+    allLogs.forEach(log => {
+      if (log.food_id) counts[log.food_id] = (counts[log.food_id] || 0) + 1;
+    });
+
+    allFoods.forEach(food => {
+      food.logCount = counts[food.id] || 0;
+    });
+
+    const favorites = allFoods.filter(f => f.is_favorite).sort((a, b) => b.logCount - a.logCount);
+    const frequents = allFoods.filter(f => !f.is_favorite && f.logCount > 0)
+                              .sort((a, b) => b.logCount - a.logCount)
+                              .slice(0, 10);
+
+    const renderGrid = (containerId, items) => {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      if (items.length === 0) {
+        container.innerHTML = `<div class="text-muted text-sm" style="grid-column: 1/-1;">No items to display.</div>`;
+        return;
+      }
+      items.forEach(food => {
+        const card = document.createElement('div');
+        card.className = 'shortcut-card';
+        card.innerHTML = `
+          <div class="title" title="${food.name}">${food.name}</div>
+          <div class="cal">${Math.round(food.macros.calories)} kcal</div>
+          <div class="meta">${food.serving_size_g}g ${food.serving_name || ''}</div>
+        `;
+        card.onclick = () => { 
+          selectHistoryFood(food); 
+          window.scrollTo({top:0, behavior:'smooth'}); 
+        };
+        container.appendChild(card);
+      });
+    };
+
+    renderGrid('favorites-grid', favorites);
+    renderGrid('frequent-grid', frequents);
+  }
 
   toggleMicrosBtn.addEventListener('click', () => {
     const isHidden = microsPanel.classList.toggle('hidden');
@@ -119,7 +181,6 @@ export function initLogFood(dashboardRef) {
 
   function renderDropdown(history, usda) {
     dropdown.innerHTML = '';
-    
     history.forEach(food => {
       const div = document.createElement('div');
       div.className = 'dropdown-item';
@@ -128,7 +189,6 @@ export function initLogFood(dashboardRef) {
       div.onclick = (e) => { e.stopPropagation(); selectHistoryFood(food); };
       dropdown.appendChild(div);
     });
-    
     usda.forEach(food => {
       const div = document.createElement('div');
       div.className = 'dropdown-item';
@@ -139,7 +199,7 @@ export function initLogFood(dashboardRef) {
     
     if (history.length > 0 || usda.length > 0) {
       dropdown.classList.remove('hidden');
-      dropdown.scrollTop = 0; // Fixes scrollbar not resetting
+      dropdown.scrollTop = 0; 
     }
   }
 
@@ -367,6 +427,7 @@ export function initLogFood(dashboardRef) {
     }
 
     showQuickLog();
+    renderShortcuts();
     dashboardRef.renderDashboard();
   });
 
@@ -404,5 +465,6 @@ export function initLogFood(dashboardRef) {
   };
 
   showQuickLog();
-  return { resetForm: showQuickLog };
+  renderShortcuts();
+  return { resetForm: showQuickLog, refreshShortcuts: renderShortcuts };
 }

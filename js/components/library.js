@@ -40,7 +40,10 @@ export function initLibrary() {
 
       div.innerHTML = `
         <div class="list-item-header">
-          <div class="list-item-title">${food.name} <span class="badge ${badgeClass}">${food.source}</span></div>
+          <div class="list-item-title">
+            <button class="btn-favorite ${food.is_favorite ? 'active' : ''}" data-id="${food.id}" title="Toggle Favorite">★</button>
+            ${food.name} <span class="badge ${badgeClass}">${food.source}</span>
+          </div>
           <div class="list-item-actions">
             <button class="btn-secondary edit-food-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" data-id="${food.id}" data-source="${food.source}">✎ Edit</button>
             <button class="btn-ghost-danger delete-food-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" data-id="${food.id}">✕</button>
@@ -57,17 +60,24 @@ export function initLibrary() {
       listEl.appendChild(div);
     });
 
+    // Toggle Favorite Action
+    document.querySelectorAll('.btn-favorite').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = parseInt(e.target.getAttribute('data-id'));
+        const food = await db.foods.get(id);
+        await db.foods.update(id, { is_favorite: !food.is_favorite });
+        renderLibrary(searchInput.value);
+      });
+    });
+
     document.querySelectorAll('.delete-food-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = parseInt(e.target.getAttribute('data-id'));
-        
-        // Custom asynchronous confirmation dialog replacement
         const confirmed = await window.customConfirm(
           "Delete Food Definition",
           "Delete this food from library? Past logs are safe.",
           true
         );
-
         if (confirmed) {
           await db.foods.delete(id);
           window.showToast("Library item deleted.");

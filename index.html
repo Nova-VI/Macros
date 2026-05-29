@@ -61,9 +61,11 @@
       <div id="dash-log-list" class="list-container"></div>
     </section>
 
-    <!-- LOG FOOD -->
+    <!-- LOG FOOD (NOW WITH LEFT SIDEBAR EXCLUSIVELY SYNCED IN HEIGHT) -->
     <section id="log-food" class="page hidden">
       <h1>Log Food</h1>
+      
+      <!-- Full-Width search bar above the grids -->
       <div class="search-container mb-1">
         <div style="position: relative; display: flex; align-items: center; width: 100%;">
           <input type="text" id="food-search" placeholder="Search foods (e.g. Chicken breast)..." autocomplete="off">
@@ -72,46 +74,63 @@
         <div id="search-dropdown" class="dropdown hidden"></div>
       </div>
 
-      <div id="log-form-container" class="card">
-        <div class="flex-between mb-1">
-          <h3 id="form-title" style="margin: 0;">Quick Log</h3>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <input type="date" id="log-date" class="input-inline">
-            <input type="time" id="log-time" class="input-inline">
+      <div class="layout-sidebar">
+        
+        <!-- Left Column: Shortcuts Sidebar Panel -->
+        <div class="sidebar">
+          <div class="card p-1">
+            <h4 style="display:flex; align-items:center; gap: 5px; color: #fbbf24;">★ Favorites</h4>
+            <div id="favorites-grid" class="shortcut-grid mt-1"></div>
+          </div>
+          <div class="card p-1">
+            <h4 style="display:flex; align-items:center; gap: 5px; color: var(--primary);">⏳ Frequent</h4>
+            <div id="frequent-grid" class="shortcut-grid mt-1"></div>
           </div>
         </div>
 
-        <div class="form-grid" style="margin-top: 0;">
-          <div class="input-group full-width"><label>Food Name</label><input type="text" id="log-name"></div>
-          <div class="input-group"><label id="serving-size-label">Base Serving Size (g)</label><input type="number" id="log-serving-g" value="100"></div>
-          <div class="input-group"><label>Serving Unit Name (optional)</label><input type="text" id="log-serving-unit" placeholder="e.g. slice, cup, bowl"></div>
-          <div class="input-group"><label id="serving-multiplier-label">Servings</label><input type="number" id="log-servings" value="1" step="0.01"></div>
-          <div class="input-group"><label id="serving-total-g-label">Total Grams</label><input type="number" id="log-total-g" value="100" step="1"></div>
-          <div class="input-group"><label>Protein (g)</label><input type="number" id="log-protein" class="macro-input" value="0" step="0.1"></div>
-          <div class="input-group"><label>Carbs (g)</label><input type="number" id="log-carbs" class="macro-input" value="0" step="0.1"></div>
-          <div class="input-group"><label>Fat (g)</label><input type="number" id="log-fat" class="macro-input" value="0" step="0.1"></div>
-          <div class="input-group"><label>Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label><input type="number" id="log-calories" value="0"></div>
+        <!-- Right Column: Main Log Food Form -->
+        <div id="log-form-container" class="card" style="margin-bottom: 0;">
+          <div class="flex-between mb-1">
+            <h3 id="form-title" style="margin: 0;">Quick Log</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="date" id="log-date" class="input-inline">
+              <input type="time" id="log-time" class="input-inline">
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top: 0;">
+            <div class="input-group full-width"><label>Food Name</label><input type="text" id="log-name"></div>
+            <div class="input-group"><label id="serving-size-label">Base Serving Size (g)</label><input type="number" id="log-serving-g" value="100"></div>
+            <div class="input-group"><label>Serving Unit Name (optional)</label><input type="text" id="log-serving-unit" placeholder="e.g. slice, cup, bowl"></div>
+            <div class="input-group"><label id="serving-multiplier-label">Servings</label><input type="number" id="log-servings" value="1" step="0.01"></div>
+            <div class="input-group"><label id="serving-total-g-label">Total Grams</label><input type="number" id="log-total-g" value="100" step="1"></div>
+            <div class="input-group"><label>Protein (g)</label><input type="number" id="log-protein" class="macro-input" value="0" step="0.1"></div>
+            <div class="input-group"><label>Carbs (g)</label><input type="number" id="log-carbs" class="macro-input" value="0" step="0.1"></div>
+            <div class="input-group"><label>Fat (g)</label><input type="number" id="log-fat" class="macro-input" value="0" step="0.1"></div>
+            <div class="input-group"><label>Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label><input type="number" id="log-calories" value="0"></div>
+          </div>
+
+          <button id="btn-toggle-micros" class="btn-link mt-1">Show Micronutrients ▾</button>
+          <div id="micros-panel" class="hidden mt-1 form-grid panel-transparent">
+            <div class="input-group"><label>Fiber (g)</label><input type="number" id="log-fiber" step="0.1" value="0"></div>
+            <div class="input-group"><label>Sugar (g)</label><input type="number" id="log-sugar" step="0.1" value="0"></div>
+            <div class="input-group"><label>Sodium (mg)</label><input type="number" id="log-sodium" step="1" value="0"></div>
+            <div class="input-group"><label>Saturated Fat (g)</label><input type="number" id="log-saturated-fat" step="0.1" value="0"></div>
+            <div class="input-group"><label>Cholesterol (mg)</label><input type="number" id="log-cholesterol" step="1" value="0"></div>
+            <div class="input-group"><label>Potassium (mg)</label><input type="number" id="log-potassium" step="1" value="0"></div>
+            <div class="input-group"><label>Vitamin A (ug)</label><input type="number" id="log-vitamin-a" step="1" value="0"></div>
+            <div class="input-group"><label>Vitamin C (mg)</label><input type="number" id="log-vitamin-c" step="0.1" value="0"></div>
+            <div class="input-group"><label>Vitamin D (ug)</label><input type="number" id="log-vitamin-d" step="0.1" value="0"></div>
+            <div class="input-group"><label>Calcium (mg)</label><input type="number" id="log-calcium" step="1" value="0"></div>
+            <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
+          </div>
+
+          <div class="flex-between mt-2">
+            <label class="custom-checkbox"><input type="checkbox" id="log-save-library"> Save to library</label>
+            <button id="btn-submit-log" class="btn">Log Food</button>
+          </div>
         </div>
 
-        <button id="btn-toggle-micros" class="btn-link mt-1">Show Micronutrients ▾</button>
-        <div id="micros-panel" class="hidden mt-1 form-grid panel-transparent">
-          <div class="input-group"><label>Fiber (g)</label><input type="number" id="log-fiber" step="0.1" value="0"></div>
-          <div class="input-group"><label>Sugar (g)</label><input type="number" id="log-sugar" step="0.1" value="0"></div>
-          <div class="input-group"><label>Sodium (mg)</label><input type="number" id="log-sodium" step="1" value="0"></div>
-          <div class="input-group"><label>Saturated Fat (g)</label><input type="number" id="log-saturated-fat" step="0.1" value="0"></div>
-          <div class="input-group"><label>Cholesterol (mg)</label><input type="number" id="log-cholesterol" step="1" value="0"></div>
-          <div class="input-group"><label>Potassium (mg)</label><input type="number" id="log-potassium" step="1" value="0"></div>
-          <div class="input-group"><label>Vitamin A (ug)</label><input type="number" id="log-vitamin-a" step="1" value="0"></div>
-          <div class="input-group"><label>Vitamin C (mg)</label><input type="number" id="log-vitamin-c" step="0.1" value="0"></div>
-          <div class="input-group"><label>Vitamin D (ug)</label><input type="number" id="log-vitamin-d" step="0.1" value="0"></div>
-          <div class="input-group"><label>Calcium (mg)</label><input type="number" id="log-calcium" step="1" value="0"></div>
-          <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
-        </div>
-
-        <div class="flex-between mt-2">
-          <label class="custom-checkbox"><input type="checkbox" id="log-save-library"> Save to library</label>
-          <button id="btn-submit-log" class="btn">Log Food</button>
-        </div>
       </div>
     </section>
 
