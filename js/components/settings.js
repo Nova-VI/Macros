@@ -93,11 +93,14 @@ export function initSettings() {
     
     if (calcMethodSelect.value === 'calculator') {
       const weight = parseFloat(calcInputs.weight.value) || 0;
-      const today = new Date().toISOString().split('T')[0];
-      const existingWeightLog = await db.weight_logs.get(today);
+      
+      // FIX: Local timezone ISO format
+      const now = new Date();
+      const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const existingWeightLog = await db.weight_logs.get(localTodayDate);
       
       if (weight > 0 && !existingWeightLog) {
-        await db.weight_logs.put({ date: today, weight_kg: weight });
+        await db.weight_logs.put({ date: localTodayDate, weight_kg: weight });
         renderChart();
       }
     }
@@ -139,8 +142,11 @@ export function initSettings() {
     const weightVal = parseFloat(document.getElementById('weight-input').value);
     if (!weightVal) return window.showToast("Enter a valid weight.", "error");
     
-    const today = new Date().toISOString().split('T')[0];
-    await db.weight_logs.put({ date: today, weight_kg: weightVal });
+    // FIX: Local timezone ISO format
+    const now = new Date();
+    const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    
+    await db.weight_logs.put({ date: localTodayDate, weight_kg: weightVal });
     
     document.getElementById('weight-input').value = '';
     window.showToast("Weight logged!");
@@ -153,13 +159,14 @@ export function initSettings() {
     window.showToast("USDA Access Key saved!");
   });
 
-  // Toggle USDA Branded Setting
   const includeBrandedCheckbox = document.getElementById('settings-include-branded');
-  includeBrandedCheckbox.checked = getIncludeBranded();
-  includeBrandedCheckbox.addEventListener('change', (e) => {
-    setIncludeBranded(e.target.checked);
-    window.showToast("Search preference saved!");
-  });
+  if (includeBrandedCheckbox) {
+    includeBrandedCheckbox.checked = getIncludeBranded();
+    includeBrandedCheckbox.addEventListener('change', (e) => {
+      setIncludeBranded(e.target.checked);
+      window.showToast("Search preference saved!");
+    });
+  }
 
   document.getElementById('btn-export').addEventListener('click', () => {
     exportDatabaseJSON();

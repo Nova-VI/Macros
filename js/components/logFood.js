@@ -40,7 +40,6 @@ export function initLogFood(dashboardRef) {
   let editingLogId = null; 
   let activeDropdownIndex = -1;
 
-  // --- KEYBOARD NAVIGATION FOR SEARCH DROPDOWN ---
   searchInput.addEventListener('keydown', (e) => {
     const items = dropdown.querySelectorAll('.dropdown-item');
     if (!items.length) return;
@@ -75,7 +74,6 @@ export function initLogFood(dashboardRef) {
     });
   }
 
-  // --- KEYBOARD SHORTCUTS FOR LOGGING FORM ---
   formContainer.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -86,7 +84,6 @@ export function initLogFood(dashboardRef) {
     }
   });
 
-  // --- SHORTCUTS SYSTEM ---
   async function renderShortcuts() {
     const [allFoods, allLogs] = await Promise.all([
       db.foods.toArray(),
@@ -151,7 +148,7 @@ export function initLogFood(dashboardRef) {
     renderDropdown(localMatches, []);
 
     clearTimeout(searchTimeout);
-    if (abortController) abortController.abort(); // Instantly kill current API call
+    if (abortController) abortController.abort(); 
 
     searchLoader.classList.remove('hidden');
 
@@ -160,7 +157,6 @@ export function initLogFood(dashboardRef) {
       const usdaMatches = await searchUSDA(query, abortController.signal);
       searchLoader.classList.add('hidden');
       
-      // Paint only if input hasn't changed/cleared since query began
       if (searchInput.value.trim().length >= 2) {
         renderDropdown(localMatches, usdaMatches);
       }
@@ -265,10 +261,10 @@ export function initLogFood(dashboardRef) {
   function clearDropdown() {
     clearTimeout(searchTimeout);
     if (abortController) {
-      abortController.abort(); // Cancel pending network fetches
+      abortController.abort();
       abortController = null;
     }
-    searchLoader.classList.add('hidden'); // Clear hourglass
+    searchLoader.classList.add('hidden');
     dropdown.innerHTML = '';
     dropdown.classList.add('hidden');
     dropdown.scrollTop = 0;
@@ -328,9 +324,12 @@ export function initLogFood(dashboardRef) {
     }
 
     const dashDateVal = document.getElementById('dash-date').value;
-    logDateInput.value = dashDateVal || new Date().toISOString().split('T')[0];
-
+    
+    // FIX: Timezone aware local date calculation
     const now = new Date();
+    const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    logDateInput.value = dashDateVal || localTodayDate;
+
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     logTimeInput.value = `${hh}:${mm}`;

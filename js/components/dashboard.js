@@ -16,21 +16,27 @@ export function initDashboard() {
   let displayMode = 'consumed'; 
   let macroChartInstance = null;
 
-  toggleViewBtn.addEventListener('click', (e) => {
-    displayMode = displayMode === 'consumed' ? 'remaining' : 'consumed';
-    e.target.innerText = displayMode === 'consumed' ? 'Show Remaining' : 'Show Consumed';
-    renderDashboard();
-  });
+  if (toggleViewBtn) {
+    toggleViewBtn.addEventListener('click', (e) => {
+      displayMode = displayMode === 'consumed' ? 'remaining' : 'consumed';
+      e.target.innerText = displayMode === 'consumed' ? 'Show Remaining' : 'Show Consumed';
+      renderDashboard();
+    });
+  }
 
   function setToday() {
-    dateInput.value = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    dateInput.value = localDate;
     updateDateDisplay();
   }
   setToday();
 
   function updateDateDisplay() {
     const d = new Date(dateInput.value + 'T00:00:00');
-    dateDisplay.innerText = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    if (dateDisplay) {
+      dateDisplay.innerText = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
     renderDashboard();
   }
 
@@ -43,9 +49,11 @@ export function initDashboard() {
 
   dateInput.addEventListener('change', updateDateDisplay);
   
-  dateDisplay.addEventListener('click', () => {
-    try { dateInput.showPicker(); } catch (e) { dateInput.focus(); }
-  });
+  if (dateDisplay) {
+    dateDisplay.addEventListener('click', () => {
+      try { dateInput.showPicker(); } catch (e) { dateInput.focus(); }
+    });
+  }
 
   document.getElementById('btn-prev-day').addEventListener('click', () => modifyDate(-1));
   document.getElementById('btn-next-day').addEventListener('click', () => modifyDate(1));
@@ -79,54 +87,108 @@ export function initDashboard() {
 
     const goals = profile || { target_calories: 2000, target_protein_g: 150, target_carbs_g: 200, target_fat_g: 65 };
 
+    // --- TIMELINE HEADER FORMATTING WITH COUNTER BADGE ---
+    const titleEl = document.getElementById('dash-log-title');
+    if (titleEl) {
+      const now = new Date();
+      const localTodayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const localYesterdayStr = new Date(yesterday.getTime() - (yesterday.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      const localTomorrowStr = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+      // Build sleek entry counter pill
+      const count = logs.length;
+      const countBadge = count > 0 
+        ? `<span class="badge" style="background: var(--surface-hover); color: var(--text-muted); font-size: 0.75rem; text-transform: lowercase; margin-left: 0.5rem; border: 1px solid var(--border);">${count} logged</span>` 
+        : '';
+
+      // Render clean date text (excluding redundant "Logs" suffix)
+      if (selectedDate === localTodayStr) {
+        titleEl.innerHTML = `Today ${countBadge}`;
+      } else if (selectedDate === localYesterdayStr) {
+        titleEl.innerHTML = `Yesterday ${countBadge}`;
+      } else if (selectedDate === localTomorrowStr) {
+        titleEl.innerHTML = `Tomorrow ${countBadge}`;
+      } else {
+        const dObj = new Date(selectedDate + 'T00:00:00');
+        const dayName = dObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const monthName = dObj.toLocaleDateString('en-US', { month: 'short' });
+        const dayNum = dObj.getDate();
+        
+        // FIX: Append year conditionally if it's not the current year
+        const selectedYear = dObj.getFullYear();
+        const currentYear = new Date().getFullYear();
+        const yearString = selectedYear !== currentYear ? `, ${selectedYear}` : '';
+
+        titleEl.innerHTML = `${dayName}, ${monthName} ${dayNum}${yearString} ${countBadge}`;
+      }
+    }
+
     // Linear Bar just for Calories
-    els.calTxt.innerText = formatText(totals.cal, goals.target_calories, 'kcal');
-    const calPercent = Math.min((totals.cal / Math.max(1, goals.target_calories)) * 100, 100);
-    els.calBar.style.width = `${calPercent}%`;
-    els.calBar.classList.remove('warning', 'danger');
-    if (totals.cal > goals.target_calories) els.calBar.classList.add('danger');
-    else if (calPercent >= 90) els.calBar.classList.add('warning');
+    if (els.calTxt) els.calTxt.innerText = formatText(totals.cal, goals.target_calories, 'kcal');
+    
+    if (els.calBar) {
+      const calPercent = Math.min((totals.cal / Math.max(1, goals.target_calories)) * 100, 100);
+      els.calBar.style.width = `${calPercent}%`;
+      els.calBar.classList.remove('warning', 'danger');
+      if (totals.cal > goals.target_calories) els.calBar.classList.add('danger');
+      else if (calPercent >= 90) els.calBar.classList.add('warning');
+    }
 
     // Text & Custom Fill Bars for Macros
-    els.proTxt.innerText = formatText(totals.pro, goals.target_protein_g, 'g');
-    const proPercent = Math.min((totals.pro / Math.max(1, goals.target_protein_g)) * 100, 100);
-    els.proFill.style.width = `${proPercent}%`;
+    if (els.proTxt) els.proTxt.innerText = formatText(totals.pro, goals.target_protein_g, 'g');
+    if (els.proFill) {
+      const proPercent = Math.min((totals.pro / Math.max(1, goals.target_protein_g)) * 100, 100);
+      els.proFill.style.width = `${proPercent}%`;
+    }
 
-    els.carbTxt.innerText = formatText(totals.carb, goals.target_carbs_g, 'g');
-    const carbPercent = Math.min((totals.carb / Math.max(1, goals.target_carbs_g)) * 100, 100);
-    els.carbFill.style.width = `${carbPercent}%`;
+    if (els.carbTxt) els.carbTxt.innerText = formatText(totals.carb, goals.target_carbs_g, 'g');
+    if (els.carbFill) {
+      const carbPercent = Math.min((totals.carb / Math.max(1, goals.target_carbs_g)) * 100, 100);
+      els.carbFill.style.width = `${carbPercent}%`;
+    }
 
-    els.fatTxt.innerText = formatText(totals.fat, goals.target_fat_g, 'g');
-    const fatPercent = Math.min((totals.fat / Math.max(1, goals.target_fat_g)) * 100, 100);
-    els.fatFill.style.width = `${fatPercent}%`;
+    if (els.fatTxt) els.fatTxt.innerText = formatText(totals.fat, goals.target_fat_g, 'g');
+    if (els.fatFill) {
+      const fatPercent = Math.min((totals.fat / Math.max(1, goals.target_fat_g)) * 100, 100);
+      els.fatFill.style.width = `${fatPercent}%`;
+    }
 
     // Chart.js Doughnut
-    const ctx = document.getElementById('macroPieChart').getContext('2d');
-    if (macroChartInstance) macroChartInstance.destroy();
+    const chartCanvas = document.getElementById('macroPieChart');
+    if (chartCanvas) {
+      const ctx = chartCanvas.getContext('2d');
+      if (macroChartInstance) macroChartInstance.destroy();
 
-    const hasData = totals.pro > 0 || totals.carb > 0 || totals.fat > 0;
+      const hasData = totals.pro > 0 || totals.carb > 0 || totals.fat > 0;
 
-    macroChartInstance = new window.Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: hasData ? ['Protein', 'Carbs', 'Fat'] : ['No Data'],
-        datasets: [{
-          data: hasData ? [totals.pro, totals.carb, totals.fat] : [1],
-          backgroundColor: hasData ? ['#10b981', '#3b82f6', '#f59e0b'] : ['#374151'],
-          borderWidth: 0,
-          hoverOffset: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '78%',
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: hasData }
+      macroChartInstance = new window.Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: hasData ? ['Protein', 'Carbs', 'Fat'] : ['No Data'],
+          datasets: [{
+            data: hasData ? [totals.pro, totals.carb, totals.fat] : [1],
+            backgroundColor: hasData ? ['#10b981', '#3b82f6', '#f59e0b'] : ['#374151'],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '78%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: hasData }
+          }
         }
-      }
-    });
+      });
+    }
 
     // Render Logs List
     logList.innerHTML = '';
