@@ -4,6 +4,7 @@ import { initLogFood } from './components/logFood.js';
 import { initRecipeComposer } from './components/recipeComposer.js';
 import { initLibrary } from './components/library.js';
 import { initSettings } from './components/settings.js';
+import { initWeightTracker } from './components/weightTracker.js';
 
 window.formatVal = function(val) {
   if (val === undefined || val === null || isNaN(val)) return '0';
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const recipeComposer = initRecipeComposer();
   const logFood = initLogFood(dashboard);            
   const library = initLibrary(recipeComposer);
+  const weightTracker = initWeightTracker();
   const settings = initSettings();
 
   const navBtns = document.querySelectorAll('.nav-btn');
@@ -97,8 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (targetId === 'dashboard') { dashboard.resetDate(); dashboard.renderDashboard(); }
       if (targetId === 'log-food') { logFood.resetForm(); document.getElementById('food-search').value = ''; logFood.refreshShortcuts(); }
       if (targetId === 'recipe-composer') { recipeComposer.resetForm(); }
+      if (targetId === 'weight-tracker') { weightTracker.renderPage(); }
       if (targetId === 'library') { document.getElementById('library-search').value = ''; library.renderLibrary(); }
-      if (targetId === 'settings') { settings.loadProfile(); setTimeout(() => settings.renderChart(), 100); }
+      if (targetId === 'settings') { settings.loadProfile(); }
     });
   });
 });

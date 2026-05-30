@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- CSS Patch for Date Inputs -->
+  <style>
+    input[type="date"] {
+      width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-color);
+      border: 1px solid var(--border); color: var(--text-main);
+      border-radius: var(--radius); font-size: 1rem; transition: border-color 0.2s;
+      color-scheme: dark; /* Fixes the calendar icon color in dark mode */
+      font-family: inherit;
+    }
+    input[type="date"]:focus { outline: none; border-color: var(--primary); }
+    
+    input[type="date"].input-inline {
+      width: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; cursor: pointer;
+      background: var(--surface-hover);
+    }
+    input[type="date"].input-inline:hover { background: var(--border); }
+  </style>
 </head>
 <body>
   <header>
@@ -15,6 +33,7 @@
       <button class="nav-btn active" data-target="dashboard">Dashboard</button>
       <button class="nav-btn" data-target="log-food">Log Food</button>
       <button class="nav-btn" data-target="recipe-composer">Recipe</button>
+      <button class="nav-btn" data-target="weight-tracker">Weight</button>
       <button class="nav-btn" data-target="library">Library</button>
       <button class="nav-btn" data-target="settings">Settings</button>
     </nav>
@@ -43,21 +62,13 @@
           <h3 style="margin: 0;">Daily Overview</h3>
           <button id="btn-toggle-view" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Show Remaining</button>
         </div>
-        
-        <!-- Calories Progress Bar -->
         <div class="macro-bar-container mb-2">
           <div class="macro-label"><span>Calories</span> <span id="dash-cal-text">0 / 0 kcal</span></div>
           <div class="progress-bg"><div class="progress-fill" id="dash-cal-bar"></div></div>
         </div>
-
-        <!-- Macro Doughnut Chart & Custom Fill Legends -->
         <div class="macro-pie-container">
-          <div class="chart-wrapper">
-            <canvas id="macroPieChart"></canvas>
-          </div>
+          <div class="chart-wrapper"><canvas id="macroPieChart"></canvas></div>
           <div class="macro-stats-vertical">
-            
-            <!-- PROTEIN ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-pro-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(16, 185, 129, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -66,8 +77,6 @@
               </div>
               <div id="dash-pro-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
-
-            <!-- CARBS ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-carb-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(59, 130, 246, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -76,8 +85,6 @@
               </div>
               <div id="dash-carb-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
-
-            <!-- FAT ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-fat-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(245, 158, 11, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -86,11 +93,9 @@
               </div>
               <div id="dash-fat-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
-
           </div>
         </div>
       </div>
-
       <h3 class="mt-1" id="dash-log-title">Today's Logs</h3>
       <div id="dash-log-list" class="list-container"></div>
     </section>
@@ -98,7 +103,6 @@
     <!-- LOG FOOD (SIDEBAR) -->
     <section id="log-food" class="page hidden">
       <h1>Log Food</h1>
-      
       <div class="search-container mb-1">
         <div style="position: relative; display: flex; align-items: center; width: 100%;">
           <input type="text" id="food-search" placeholder="Search foods (e.g. Chicken breast)..." autocomplete="off">
@@ -106,10 +110,7 @@
         </div>
         <div id="search-dropdown" class="dropdown hidden"></div>
       </div>
-
       <div class="layout-sidebar">
-        
-        <!-- Shortcuts Sidebar -->
         <div class="sidebar">
           <div class="card p-1">
             <h4 style="display:flex; align-items:center; gap: 5px; color: #fbbf24;">★ Favorites</h4>
@@ -120,8 +121,6 @@
             <div id="frequent-grid" class="shortcut-grid mt-1"></div>
           </div>
         </div>
-
-        <!-- Main Form -->
         <div id="log-form-container" class="card" style="margin-bottom: 0;">
           <div class="flex-between mb-1">
             <h3 id="form-title" style="margin: 0;">Quick Log</h3>
@@ -130,7 +129,6 @@
               <input type="time" id="log-time" class="input-inline">
             </div>
           </div>
-
           <div class="form-grid" style="margin-top: 0;">
             <div class="input-group full-width"><label>Food Name</label><input type="text" id="log-name"></div>
             <div class="input-group"><label id="serving-size-label">Base Serving Size (g)</label><input type="number" id="log-serving-g" value="100"></div>
@@ -142,7 +140,6 @@
             <div class="input-group"><label>Fat (g)</label><input type="number" id="log-fat" class="macro-input" value="0" step="0.1"></div>
             <div class="input-group"><label>Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label><input type="number" id="log-calories" value="0"></div>
           </div>
-
           <button id="btn-toggle-micros" class="btn-link mt-1">Show Micronutrients ▾</button>
           <div id="micros-panel" class="hidden mt-1 form-grid panel-transparent">
             <div class="input-group"><label>Fiber (g)</label><input type="number" id="log-fiber" step="0.1" value="0"></div>
@@ -157,13 +154,11 @@
             <div class="input-group"><label>Calcium (mg)</label><input type="number" id="log-calcium" step="1" value="0"></div>
             <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
           </div>
-
           <div class="flex-between mt-2">
             <label class="custom-checkbox"><input type="checkbox" id="log-save-library"> Save to library</label>
             <button id="btn-submit-log" class="btn">Log Food</button>
           </div>
         </div>
-
       </div>
     </section>
 
@@ -176,16 +171,13 @@
           <div class="input-group"><label>Serving Unit (optional)</label><input type="text" id="recipe-unit" placeholder="e.g. mug, portion"></div>
           <div class="input-group"><label>Total Weight (g)</label><input type="number" id="recipe-total-g" readonly value="0"></div>
         </div>
-        
         <h3 class="mt-2">Add Ingredient</h3>
         <div class="search-container mt-05 mb-1">
           <input type="text" id="recipe-search" placeholder="Search ingredient..." autocomplete="off">
           <div id="recipe-search-dropdown" class="dropdown hidden"></div>
         </div>
-
         <h3 class="mt-2">Ingredients</h3>
         <div id="recipe-ingredient-list" class="list-container"></div>
-
         <div class="mt-2 panel-transparent">
           <div class="flex-between mb-1">
             <h4 style="margin: 0;">Recipe Total Nutrition</h4>
@@ -198,8 +190,58 @@
             <div class="stat-col"><span class="stat-label">Fat</span><span class="stat-value" id="recipe-fat">0g</span></div>
           </div>
         </div>
-        
         <button id="btn-save-recipe" class="btn mt-2 full-width">Save Recipe to Library</button>
+      </div>
+    </section>
+
+    <!-- WEIGHT TRACKER -->
+    <section id="weight-tracker" class="page hidden">
+      <h1>Weight Tracker</h1>
+      
+      <div class="layout-sidebar">
+        <!-- History Sidebar -->
+        <div class="sidebar">
+          <div class="card p-1" style="max-height: 500px; overflow-y: auto;">
+            <h4>Log History</h4>
+            <div id="weight-history-list" class="list-container mt-1"></div>
+          </div>
+        </div>
+
+        <!-- Main Form & Chart -->
+        <div class="card" style="margin-bottom: 0; align-self: flex-start; width: 100%;">
+          
+          <div class="flex-between gap-1 mb-2">
+            <div class="input-group">
+              <label>Date</label>
+              <input type="date" id="weight-log-date">
+            </div>
+            <div class="input-group" style="flex: 1;">
+              <label>Body Weight (kg)</label>
+              <input type="number" id="weight-input" step="0.1">
+            </div>
+            <button id="btn-log-weight" class="btn" style="margin-top: 1.4rem;">Save Log</button>
+          </div>
+
+          <hr class="mt-2 mb-2" style="border:0; border-top: 1px solid var(--border);">
+
+          <!-- Advanced Filters -->
+          <div class="flex-between mb-1 gap-1" style="flex-wrap: wrap;">
+             <h3 style="margin: 0;">Weight Trend</h3>
+             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span class="text-sm text-muted">Filter:</span>
+                <input type="date" id="filter-start-date" class="input-inline">
+                <span class="text-sm text-muted">to</span>
+                <input type="date" id="filter-end-date" class="input-inline">
+                <button id="btn-clear-filter" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
+             </div>
+          </div>
+
+          <!-- Fixed Height Container to prevent Chart.js infinite scaling loop -->
+          <div style="position: relative; height: 350px; width: 100%;">
+            <canvas id="weightChart"></canvas>
+          </div>
+
+        </div>
       </div>
     </section>
 
@@ -251,15 +293,6 @@
       </div>
 
       <div class="card">
-        <h3>Weight Tracker</h3>
-        <div class="flex-between gap-1 mt-1 mb-2">
-          <div class="input-group" style="flex: 1;"><label>Log Today's Weight (kg)</label><input type="number" id="weight-input" step="0.1"></div>
-          <button id="btn-log-weight" class="btn" style="margin-top: 1.4rem;">Log Weight</button>
-        </div>
-        <canvas id="weightChart" width="400" height="200"></canvas>
-      </div>
-
-      <div class="card">
         <h3>Data Management</h3>
         <div class="input-group mb-1 mt-1">
           <label>USDA API Key</label>
@@ -286,7 +319,26 @@
 
   </main>
 
-  <!-- Recipe Weight Modal -->
+  <!-- Weight Edit Modal -->
+  <div id="edit-weight-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 350px;">
+      <h3>Edit Weight Log</h3>
+      <div class="input-group mt-1">
+        <label>Date</label>
+        <input type="date" id="edit-weight-date" disabled>
+      </div>
+      <div class="input-group mt-1">
+        <label>Weight (kg)</label>
+        <input type="number" id="edit-weight-value" step="0.1">
+      </div>
+      <div class="flex-between mt-2 pt-1" style="border-top: 1px solid var(--border);">
+        <button id="btn-cancel-weight-edit" class="btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
+        <button id="btn-save-weight-edit" class="btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER MODALS -->
   <div id="recipe-weight-modal" class="modal hidden">
     <div class="modal-content" style="max-width: 350px;">
       <h3 id="recipe-weight-title">Ingredient Amount</h3>
@@ -299,7 +351,6 @@
     </div>
   </div>
 
-  <!-- Full Nutrition Facts Read-Only Modal -->
   <div id="full-nutrition-modal" class="modal hidden">
     <div class="modal-content" style="max-width: 450px;">
       <h2>Recipe Nutrition Facts</h2>
@@ -325,7 +376,6 @@
     </div>
   </div>
 
-  <!-- Library Edit Modal -->
   <div id="library-edit-modal" class="modal hidden">
     <div class="modal-content">
       <h2>Edit Library Item</h2>
@@ -361,7 +411,6 @@
     </div>
   </div>
 
-  <!-- Custom Confirmation Modal -->
   <div id="confirm-modal" class="modal hidden" style="z-index: 2100;">
     <div class="modal-content" style="max-width: 400px; padding: 1.75rem;">
       <h3 id="confirm-title" style="margin-bottom: 0.5rem;">Confirm Action</h3>

@@ -94,63 +94,16 @@ export function initSettings() {
     if (calcMethodSelect.value === 'calculator') {
       const weight = parseFloat(calcInputs.weight.value) || 0;
       
-      // FIX: Local timezone ISO format
       const now = new Date();
       const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
       const existingWeightLog = await db.weight_logs.get(localTodayDate);
       
       if (weight > 0 && !existingWeightLog) {
         await db.weight_logs.put({ date: localTodayDate, weight_kg: weight });
-        renderChart();
       }
     }
 
     window.showToast("Profile target goals saved!");
-  });
-
-  let chartInstance = null;
-  async function renderChart() {
-    const weights = await db.weight_logs.orderBy('date').toArray();
-    const ctx = document.getElementById('weightChart').getContext('2d');
-
-    const labels = weights.map(w => w.date.split('-').slice(1).join('/')); 
-    const data = weights.map(w => w.weight_kg);
-
-    if (chartInstance) chartInstance.destroy();
-
-    chartInstance = new window.Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Weight (kg)', data: data, borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true,
-          tension: 0.3, pointBackgroundColor: '#10b981'
-        }]
-      },
-      options: {
-        responsive: true, plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
-          y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
-        }
-      }
-    });
-  }
-
-  document.getElementById('btn-log-weight').addEventListener('click', async () => {
-    const weightVal = parseFloat(document.getElementById('weight-input').value);
-    if (!weightVal) return window.showToast("Enter a valid weight.", "error");
-    
-    // FIX: Local timezone ISO format
-    const now = new Date();
-    const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    
-    await db.weight_logs.put({ date: localTodayDate, weight_kg: weightVal });
-    
-    document.getElementById('weight-input').value = '';
-    window.showToast("Weight logged!");
-    renderChart();
   });
 
   document.getElementById('btn-save-settings').addEventListener('click', () => {
@@ -193,5 +146,5 @@ export function initSettings() {
     }
   });
 
-  return { renderChart, loadProfile };
+  return { loadProfile };
 }
