@@ -15,7 +15,7 @@ export function initLogFood(dashboardRef) {
   const formContainer = document.getElementById('log-form-container');
   
   const els = {
-    emojiBtn: document.getElementById('log-emoji-btn'), // Controlled Emoji Button
+    emojiBtn: document.getElementById('log-emoji-btn'), 
     name: document.getElementById('log-name'),
     serving_g: document.getElementById('log-serving-g'),
     base_unit: document.getElementById('log-base-unit'),
@@ -162,7 +162,7 @@ export function initLogFood(dashboardRef) {
         els.serving_g.disabled = false; els.serving_unit.disabled = false;
         els.base_unit.disabled = false; 
         
-        // --- BUG FIX: Reset the emoji when breaking the library link ---
+        // BUG FIX: Reset the emoji when breaking the library link
         currentFood.emoji = '';
         els.emojiBtn.innerText = '🍽️';
 
@@ -188,7 +188,7 @@ export function initLogFood(dashboardRef) {
         els.serving_g.disabled = false; els.serving_unit.disabled = false;
         els.base_unit.disabled = false;
         
-        // --- BUG FIX: Reset the emoji when typing an unrecognized food ---
+        // BUG FIX: Reset the emoji when typing an unrecognized food
         currentFood.emoji = '';
         els.emojiBtn.innerText = '🍽️';
 
@@ -274,7 +274,6 @@ export function initLogFood(dashboardRef) {
     
     // Set emoji
     els.emojiBtn.innerText = currentFood.emoji || '🍽️';
-    
     els.name.readOnly = false;
     
     els.serving_g.value = currentFood.serving_size_g;
@@ -309,14 +308,16 @@ export function initLogFood(dashboardRef) {
     const mm = String(now.getMinutes()).padStart(2, '0');
     logTimeInput.value = `${hh}:${mm}`;
 
-    updateLabelsAndScales();
+    updateLabelsAndScalesOnly();
+    scaleNutrients(1);
 
     if (shouldFocus) {
       setTimeout(() => { els.servings.focus(); els.servings.select(); }, 50);
     }
   }
 
-  function updateLabelsAndScales() {
+  // Pure display state layout updater
+  function updateLabelsAndScalesOnly() {
     const unit = els.serving_unit.value.trim();
     const baseU = els.base_unit.value; 
     const mult = parseFloat(els.servings.value) || 1;
@@ -330,41 +331,6 @@ export function initLogFood(dashboardRef) {
     document.getElementById('serving-size-label').innerText = `Base Serving Size (${baseU})`;
     document.getElementById('serving-multiplier-label').innerText = labelText;
     document.getElementById('serving-total-g-label').innerText = `Total Amount (${baseU})`;
-    
-    updateNutrientsFromMultiplier();
-  }
-
-  function updateNutrientsFromMultiplier() {
-    const baseG = parseFloat(els.serving_g.value) || 100;
-    const mult = parseFloat(els.servings.value) || 0;
-    els.total_g.value = Math.round(baseG * mult);
-    scaleNutrients(mult);
-  }
-
-  function updateMultiplierFromTotalG() {
-    const baseG = parseFloat(els.serving_g.value) || 100;
-    const totalG = parseFloat(els.total_g.value) || 0;
-    const mult = totalG / baseG;
-    els.servings.value = mult.toFixed(2);
-    updateLabelsAndScales(); 
-  }
-
-  function updateFromBaseServingG() {
-    const newBaseG = parseFloat(els.serving_g.value) || 1;
-    const oldBaseG = currentFood.serving_size_g || 1;
-
-    if (newBaseG !== oldBaseG) {
-      const ratio = newBaseG / oldBaseG;
-      for (let k in currentFood.macros) currentFood.macros[k] *= ratio;
-      if (currentFood.micros) {
-        for (let k in currentFood.micros) currentFood.micros[k] *= ratio;
-      }
-      currentFood.serving_size_g = newBaseG;
-    }
-
-    const mult = parseFloat(els.servings.value) || 0;
-    els.total_g.value = Math.round(newBaseG * mult);
-    scaleNutrients(mult);
   }
 
   function scaleNutrients(mult) {
@@ -388,10 +354,47 @@ export function initLogFood(dashboardRef) {
     els.iron.value = ((micros.iron_mg || 0) * mult).toFixed(1);
   }
 
-  els.servings.addEventListener('input', updateLabelsAndScales);
-  els.total_g.addEventListener('input', updateMultiplierFromTotalG);
-  els.serving_unit.addEventListener('input', updateLabelsAndScales);
-  els.serving_g.addEventListener('input', updateFromBaseServingG);
+  // UNIDIRECTIONAL BINDINGS (Eliminates feedback looping completely)
+  
+  els.servings.addEventListener('input', () => {
+    const baseG = parseFloat(els.serving_g.value) || 100;
+    const mult = parseFloat(els.servings.value) || 0;
+    els.total_g.value = Math.round(baseG * mult); // Recalculate Total
+    scaleNutrients(mult);
+    updateLabelsAndScalesOnly();
+  });
+
+  els.total_g.addEventListener('input', () => {
+    const baseG = parseFloat(els.serving_g.value) || 100;
+    const totalG = parseFloat(els.total_g.value) || 0;
+    const mult = totalG / baseG;
+    
+    // update servings, but DO NOT overwrite what the user typed in total_g
+    els.servings.value = mult.toFixed(2); 
+    scaleNutrients(mult);
+    updateLabelsAndScalesOnly();
+  });
+
+  els.serving_g.addEventListener('input', () => {
+    const newBaseG = parseFloat(els.serving_g.value) || 1;
+    const oldBaseG = currentFood.serving_size_g || 1;
+
+    if (newBaseG !== oldBaseG) {
+      const ratio = newBaseG / oldBaseG;
+      for (let k in currentFood.macros) currentFood.macros[k] *= ratio;
+      if (currentFood.micros) {
+        for (let k in currentFood.micros) currentFood.micros[k] *= ratio;
+      }
+      currentFood.serving_size_g = newBaseG;
+    }
+
+    const mult = parseFloat(els.servings.value) || 0;
+    els.total_g.value = Math.round(newBaseG * mult);
+    scaleNutrients(mult);
+    updateLabelsAndScalesOnly();
+  });
+
+  els.serving_unit.addEventListener('input', updateLabelsAndScalesOnly);
   
   els.base_unit.addEventListener('change', (e) => {
     const newUnit = e.target.value;
@@ -406,7 +409,9 @@ export function initLogFood(dashboardRef) {
         if (currentFood.micros) { for (let k in currentFood.micros) currentFood.micros[k] /= d; }
       }
       currentFood.base_unit = newUnit;
-      updateLabelsAndScales();
+      updateLabelsAndScalesOnly();
+      const mult = parseFloat(els.servings.value) || 0;
+      scaleNutrients(mult);
     }
   });
 
@@ -457,7 +462,6 @@ export function initLogFood(dashboardRef) {
       }
     }
 
-    // Determine user emoji status
     let userEmoji = (els.emojiBtn.innerText === '🍽️') ? '' : els.emojiBtn.innerText;
     let triggerAI = false;
     if (!userEmoji) {
@@ -579,7 +583,8 @@ export function initLogFood(dashboardRef) {
       logTimeInput.value = `${hh}:${mm}`;
     }
 
-    updateLabelsAndScales();
+    updateLabelsAndScalesOnly();
+    scaleNutrients(log.servings);
 
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === 'log-food'));
     document.querySelectorAll('.page').forEach(page => {
