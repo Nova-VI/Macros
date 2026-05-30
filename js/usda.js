@@ -43,6 +43,61 @@ export async function searchUSDA(query, signal) {
   }
 }
 
+// Mathematical helper to parse physical density from USDA properties
+function calculateUSDADensity(data) {
+  if (!data) return 1.0;
+  
+  // 1. Foundation or Legacy Foods portions parser
+  if (data.foodPortions && data.foodPortions.length > 0) {
+    for (const portion of data.foodPortions) {
+      const modifier = (portion.modifier || "").toLowerCase();
+      const gramWeight = portion.gramWeight;
+      if (gramWeight && modifier) {
+        // Extract numeric prefixes (e.g., "12" in "12 fl oz" or "0.5" in "0.5 cup")
+        const numMatch = modifier.match(/(\d+(?:\.\d+)?)/);
+        const multiplier = numMatch ? parseFloat(numMatch[1]) : 1.0;
+
+        if (modifier.includes("cup") && multiplier > 0) {
+          return gramWeight / (multiplier * 236.588);
+        }
+        if ((modifier.includes("fl") || modifier.includes("fluid") || modifier.includes("oz")) && multiplier > 0) {
+          return gramWeight / (multiplier * 29.5735);
+        }
+        if (modifier.includes("ml") && multiplier > 0) {
+          return gramWeight / multiplier;
+        }
+      }
+    }
+  }
+  
+  // 2. Branded Foods household strings parsing
+  const hhText = (data.householdServingFullText || "").toLowerCase();
+  const servingSize = parseFloat(data.servingSize);
+  const servingUnit = (data.servingSizeUnit || "").toLowerCase();
+  
+  if (hhText && servingSize) {
+    const gMatch = hhText.match(/(\d+(?:\.\d+)?)\s*g/);
+    const mlMatch = hhText.match(/(\d+(?:\.\d+)?)\s*m[lL]/);
+    
+    if (gMatch && mlMatch) {
+      const gVal = parseFloat(gMatch[1]);
+      const mlVal = parseFloat(mlMatch[1]);
+      if (mlVal > 0) return gVal / mlVal;
+    }
+    
+    if (servingUnit === 'ml' && gMatch) {
+      const gVal = parseFloat(gMatch[1]);
+      return gVal / servingSize;
+    }
+    if ((servingUnit === 'g' || servingUnit === 'g') && mlMatch) {
+      const mlVal = parseFloat(mlMatch[1]);
+      return servingSize / mlVal;
+    }
+  }
+  
+  return 1.0; 
+}
+
 export async function getUSDAFoodDetails(fdcId) {
   const apiKey = getApiKey();
   try {
@@ -55,9 +110,23 @@ export async function getUSDAFoodDetails(fdcId) {
       return nutrient ? nutrient.amount : 0;
     };
 
+    // Auto-detect liquid products
+    const servingUnit = data.servingSizeUnit ? data.servingSizeUnit.toLowerCase() : 'g';
+    const isLiquid = servingUnit === 'ml' || servingUnit === 'ml' || servingUnit.includes('oz') || 
+                     /juice|milk|water|beverage|soda|oil|vinegar|sauce|syrup|soup|broth|drink|beer|wine|cider|fluid/i.test(data.description);
+    
+    const baseUnit = isLiquid ? 'ml' : 'g';
+    
+    let density = calculateUSDADensity(data);
+    
+    // Safety Guard: Standard food density limits (prevents mathematical anomalies)
+    if (isNaN(density) || density < 0.5 || density > 2.0) {
+      density = 1.0; 
+    }
+
     return {
       usda_fdc_id: data.fdcId, name: data.description, source: 'usda',
-      serving_size_g: 100, serving_name: '', 
+      serving_size_g: 100, base_unit: baseUnit, density: density, serving_name: '', 
       macros: { calories: getAmt(NUTRIENT_IDS.calories), protein_g: getAmt(NUTRIENT_IDS.protein), carbs_g: getAmt(NUTRIENT_IDS.carbs), fat_g: getAmt(NUTRIENT_IDS.fat) },
       micros: {
         fiber_g: getAmt(NUTRIENT_IDS.fiber), sugar_g: getAmt(NUTRIENT_IDS.sugar), sodium_mg: getAmt(NUTRIENT_IDS.sodium),

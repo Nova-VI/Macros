@@ -8,15 +8,28 @@ export function initLibrary() {
   const editMicrosPanel = document.getElementById('edit-micros-panel');
 
   const editEls = {
-    name: document.getElementById('edit-lib-name'), serving_g: document.getElementById('edit-lib-serving-g'),
-    serving_unit: document.getElementById('edit-lib-serving-unit'), protein: document.getElementById('edit-lib-protein'),
-    carbs: document.getElementById('edit-lib-carbs'), fat: document.getElementById('edit-lib-fat'), calories: document.getElementById('edit-lib-calories'),
-    fiber: document.getElementById('edit-lib-fiber'), sugar: document.getElementById('edit-lib-sugar'),
-    sodium: document.getElementById('edit-lib-sodium'), sat_fat: document.getElementById('edit-lib-sat-fat'),
-    chol: document.getElementById('edit-lib-chol'), potassium: document.getElementById('edit-lib-potassium'),
-    vit_a: document.getElementById('edit-lib-vit-a'), vit_c: document.getElementById('edit-lib-vit-c'),
-    vit_d: document.getElementById('edit-lib-vit-d'), calcium: document.getElementById('edit-lib-calcium'), iron: document.getElementById('edit-lib-iron'),
-    saveBtn: document.getElementById('btn-save-lib-edit'), cancelBtn: document.getElementById('btn-cancel-lib-edit')
+    name: document.getElementById('edit-lib-name'), 
+    serving_g: document.getElementById('edit-lib-serving-g'),
+    base_unit: document.getElementById('edit-lib-base-unit'), 
+    serving_unit: document.getElementById('edit-lib-serving-unit'), 
+    protein: document.getElementById('edit-lib-protein'),
+    carbs: document.getElementById('edit-lib-carbs'), 
+    fat: document.getElementById('edit-lib-fat'), 
+    calories: document.getElementById('edit-lib-calories'),
+    density: document.getElementById('edit-lib-density'),
+    fiber: document.getElementById('edit-lib-fiber'), 
+    sugar: document.getElementById('edit-lib-sugar'),
+    sodium: document.getElementById('edit-lib-sodium'), 
+    sat_fat: document.getElementById('edit-lib-sat-fat'),
+    chol: document.getElementById('edit-lib-chol'), 
+    potassium: document.getElementById('edit-lib-potassium'),
+    vit_a: document.getElementById('edit-lib-vit-a'), 
+    vit_c: document.getElementById('edit-lib-vit-c'),
+    vit_d: document.getElementById('edit-lib-vit-d'), 
+    calcium: document.getElementById('edit-lib-calcium'), 
+    iron: document.getElementById('edit-lib-iron'),
+    saveBtn: document.getElementById('btn-save-lib-edit'), 
+    cancelBtn: document.getElementById('btn-cancel-lib-edit')
   };
 
   let activeEditId = null;
@@ -37,6 +50,7 @@ export function initLibrary() {
       const div = document.createElement('div');
       div.className = 'list-item';
       let badgeClass = food.source === 'custom' ? 'history' : (food.source === 'composite' ? 'composite' : 'usda');
+      const unit = food.base_unit || 'g'; 
 
       div.innerHTML = `
         <div class="list-item-header">
@@ -55,12 +69,11 @@ export function initLibrary() {
           <div class="stat-col"><span class="stat-label">Carbs</span><span class="stat-value">${window.formatVal(food.macros.carbs_g)}g</span></div>
           <div class="stat-col"><span class="stat-label">Fat</span><span class="stat-value">${window.formatVal(food.macros.fat_g)}g</span></div>
         </div>
-        <div class="text-muted text-sm mt-05">Base Serving: ${food.serving_size_g}g ${food.serving_name || ''}</div>
+        <div class="text-muted text-sm mt-05">Base Serving: ${food.serving_size_g}${unit} ${food.serving_name || ''}</div>
       `;
       listEl.appendChild(div);
     });
 
-    // Toggle Favorite Action
     document.querySelectorAll('.btn-favorite').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = parseInt(e.target.getAttribute('data-id'));
@@ -73,11 +86,7 @@ export function initLibrary() {
     document.querySelectorAll('.delete-food-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = parseInt(e.target.getAttribute('data-id'));
-        const confirmed = await window.customConfirm(
-          "Delete Food Definition",
-          "Delete this food from library? Past logs are safe.",
-          true
-        );
+        const confirmed = await window.customConfirm("Delete Food", "Delete this food from library? Past logs are safe.", true);
         if (confirmed) {
           await db.foods.delete(id);
           window.showToast("Library item deleted.");
@@ -105,11 +114,13 @@ export function initLibrary() {
     activeEditId = id;
     editEls.name.value = food.name;
     editEls.serving_g.value = food.serving_size_g;
+    editEls.base_unit.value = food.base_unit || 'g'; 
     editEls.serving_unit.value = food.serving_name || '';
     editEls.protein.value = food.macros.protein_g;
     editEls.carbs.value = food.macros.carbs_g;
     editEls.fat.value = food.macros.fat_g;
     editEls.calories.value = food.macros.calories;
+    editEls.density.value = food.density || 1.0;
 
     const micros = food.micros || {};
     editEls.fiber.value = micros.fiber_g || 0;
@@ -134,7 +145,10 @@ export function initLibrary() {
   editEls.saveBtn.addEventListener('click', async () => {
     if (!activeEditId) return;
     await db.foods.update(activeEditId, {
-      name: editEls.name.value.trim(), serving_size_g: parseFloat(editEls.serving_g.value) || 100, serving_name: editEls.serving_unit.value.trim(),
+      name: editEls.name.value.trim(), serving_size_g: parseFloat(editEls.serving_g.value) || 100, 
+      base_unit: editEls.base_unit.value, 
+      serving_name: editEls.serving_unit.value.trim(),
+      density: parseFloat(editEls.density.value) || 1.0,
       macros: { protein_g: parseFloat(editEls.protein.value)||0, carbs_g: parseFloat(editEls.carbs.value)||0, fat_g: parseFloat(editEls.fat.value)||0, calories: parseFloat(editEls.calories.value)||0 },
       micros: {
         fiber_g: parseFloat(editEls.fiber.value)||0, sugar_g: parseFloat(editEls.sugar.value)||0, sodium_mg: parseFloat(editEls.sodium.value)||0,

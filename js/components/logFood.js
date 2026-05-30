@@ -16,6 +16,7 @@ export function initLogFood(dashboardRef) {
   const els = {
     name: document.getElementById('log-name'),
     serving_g: document.getElementById('log-serving-g'),
+    base_unit: document.getElementById('log-base-unit'),
     serving_unit: document.getElementById('log-serving-unit'),
     servings: document.getElementById('log-servings'),
     total_g: document.getElementById('log-total-g'),
@@ -24,6 +25,7 @@ export function initLogFood(dashboardRef) {
     fat: document.getElementById('log-fat'),
     calories: document.getElementById('log-calories'),
     saveLibrary: document.getElementById('log-save-library'),
+    saveOnlyBtn: document.getElementById('btn-save-only'),
     submitBtn: document.getElementById('btn-submit-log'),
     
     fiber: document.getElementById('log-fiber'), sugar: document.getElementById('log-sugar'),
@@ -43,21 +45,14 @@ export function initLogFood(dashboardRef) {
   searchInput.addEventListener('keydown', (e) => {
     const items = dropdown.querySelectorAll('.dropdown-item');
     if (!items.length) return;
-
     if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
-      updateDropdownHighlight(items);
+      e.preventDefault(); activeDropdownIndex = (activeDropdownIndex + 1) % items.length; updateDropdownHighlight(items);
     } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
-      updateDropdownHighlight(items);
+      e.preventDefault(); activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length; updateDropdownHighlight(items);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const targetIdx = activeDropdownIndex === -1 ? 0 : activeDropdownIndex;
-      if (items[targetIdx]) {
-        items[targetIdx].click();
-      }
+      if (items[targetIdx]) items[targetIdx].click();
     } else if (e.key === 'Escape') {
       clearDropdown();
     }
@@ -66,8 +61,7 @@ export function initLogFood(dashboardRef) {
   function updateDropdownHighlight(items) {
     items.forEach((item, index) => {
       if (index === activeDropdownIndex) {
-        item.classList.add('kbd-active');
-        item.scrollIntoView({ block: 'nearest' });
+        item.classList.add('kbd-active'); item.scrollIntoView({ block: 'nearest' });
       } else {
         item.classList.remove('kbd-active');
       }
@@ -75,7 +69,7 @@ export function initLogFood(dashboardRef) {
   }
 
   formContainer.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
       e.preventDefault();
       if (!els.saveLibrary.disabled && !els.saveLibrary.closest('.custom-checkbox').classList.contains('invisible')) {
         els.saveLibrary.checked = e.ctrlKey;
@@ -85,48 +79,32 @@ export function initLogFood(dashboardRef) {
   });
 
   async function renderShortcuts() {
-    const [allFoods, allLogs] = await Promise.all([
-      db.foods.toArray(),
-      db.logs.toArray()
-    ]);
-
+    const [allFoods, allLogs] = await Promise.all([db.foods.toArray(), db.logs.toArray()]);
     const counts = {};
-    allLogs.forEach(log => {
-      if (log.food_id) counts[log.food_id] = (counts[log.food_id] || 0) + 1;
-    });
-
-    allFoods.forEach(food => {
-      food.logCount = counts[food.id] || 0;
-    });
+    allLogs.forEach(log => { if (log.food_id) counts[log.food_id] = (counts[log.food_id] || 0) + 1; });
+    allFoods.forEach(food => { food.logCount = counts[food.id] || 0; });
 
     const favorites = allFoods.filter(f => f.is_favorite).sort((a, b) => b.logCount - a.logCount);
-    const frequents = allFoods.filter(f => !f.is_favorite && f.logCount > 0)
-                              .sort((a, b) => b.logCount - a.logCount)
-                              .slice(0, 10);
+    const frequents = allFoods.filter(f => !f.is_favorite && f.logCount > 0).sort((a, b) => b.logCount - a.logCount).slice(0, 10);
 
     const renderGrid = (containerId, items) => {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
-      if (items.length === 0) {
-        container.innerHTML = `<div class="text-muted text-sm" style="grid-column: 1/-1;">No items to display.</div>`;
-        return;
-      }
+      if (items.length === 0) return container.innerHTML = `<div class="text-muted text-sm" style="grid-column: 1/-1;">No items to display.</div>`;
+      
       items.forEach(food => {
         const card = document.createElement('div');
         card.className = 'shortcut-card';
+        const unit = food.base_unit || 'g'; 
         card.innerHTML = `
           <div class="title" title="${food.name}">${food.name}</div>
           <div class="cal">${Math.round(food.macros.calories)} kcal</div>
-          <div class="meta">${food.serving_size_g}g ${food.serving_name || ''}</div>
+          <div class="meta">${food.serving_size_g}${unit} ${food.serving_name || ''}</div>
         `;
-        card.onclick = () => { 
-          selectHistoryFood(food); 
-          window.scrollTo({top:0, behavior:'smooth'}); 
-        };
+        card.onclick = () => { selectHistoryFood(food); window.scrollTo({top:0, behavior:'smooth'}); };
         container.appendChild(card);
       });
     };
-
     renderGrid('favorites-grid', favorites);
     renderGrid('frequent-grid', frequents);
   }
@@ -143,47 +121,39 @@ export function initLogFood(dashboardRef) {
       if (query.length === 0) showQuickLog();
       return;
     }
-
     const localMatches = await db.foods.filter(f => f.name.toLowerCase().includes(query.toLowerCase())).toArray();
     renderDropdown(localMatches, []);
 
     clearTimeout(searchTimeout);
     if (abortController) abortController.abort(); 
-
     searchLoader.classList.remove('hidden');
 
     searchTimeout = setTimeout(async () => {
       abortController = new AbortController();
       const usdaMatches = await searchUSDA(query, abortController.signal);
       searchLoader.classList.add('hidden');
-      
-      if (searchInput.value.trim().length >= 2) {
-        renderDropdown(localMatches, usdaMatches);
-      }
+      if (searchInput.value.trim().length >= 2) renderDropdown(localMatches, usdaMatches);
     }, 400); 
   });
 
   document.addEventListener('click', (e) => {
-    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-      clearDropdown();
-    }
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) clearDropdown();
   });
 
   els.name.addEventListener('input', async (e) => {
     if (editingLogId) return; 
-
     const typedName = e.target.value; 
     const trimmedName = typedName.trim();
 
     if (trimmedName.length < 2) {
       if (currentFood && currentFood.id !== undefined) {
-        currentFood.id = undefined;
-        currentFood.source = 'custom';
-        els.serving_g.disabled = false;
-        els.serving_unit.disabled = false;
+        currentFood.id = undefined; currentFood.source = 'custom';
+        els.serving_g.disabled = false; els.serving_unit.disabled = false;
+        els.base_unit.disabled = false; 
         const saveLabel = els.saveLibrary.closest('.custom-checkbox');
         if (saveLabel) saveLabel.classList.remove('invisible');
         els.saveLibrary.disabled = false;
+        els.saveOnlyBtn.classList.remove('hidden');
         formTitle.innerText = "Quick Log";
       }
       if (currentFood) currentFood.name = typedName;
@@ -198,18 +168,14 @@ export function initLogFood(dashboardRef) {
       populateForm(false);
     } else {
       if (currentFood && currentFood.id !== undefined) {
-        currentFood.id = undefined;
-        currentFood.source = 'custom';
-        currentFood.name = typedName;
-        
-        els.serving_g.disabled = false;
-        els.serving_unit.disabled = false;
+        currentFood.id = undefined; currentFood.source = 'custom'; currentFood.name = typedName;
+        els.serving_g.disabled = false; els.serving_unit.disabled = false;
+        els.base_unit.disabled = false;
         
         const saveLabel = els.saveLibrary.closest('.custom-checkbox');
         if (saveLabel) saveLabel.classList.remove('invisible');
-        els.saveLibrary.checked = false;
-        els.saveLibrary.disabled = false;
-        
+        els.saveLibrary.checked = false; els.saveLibrary.disabled = false;
+        els.saveOnlyBtn.classList.remove('hidden');
         formTitle.innerText = "Quick Log";
       } else if (currentFood) {
         currentFood.name = typedName; 
@@ -233,61 +199,45 @@ export function initLogFood(dashboardRef) {
   }
 
   function renderDropdown(history, usda) {
-    dropdown.innerHTML = '';
-    activeDropdownIndex = -1; 
-    
+    dropdown.innerHTML = ''; activeDropdownIndex = -1; 
     history.forEach(food => {
-      const div = document.createElement('div');
-      div.className = 'dropdown-item';
+      const div = document.createElement('div'); div.className = 'dropdown-item';
       let badge = food.source === 'composite' ? 'composite' : 'history';
       div.innerHTML = `<span>${food.name} ${food.serving_name ? `(${food.serving_name})` : ''}</span> <span class="badge ${badge}">${food.source}</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectHistoryFood(food); };
       dropdown.appendChild(div);
     });
     usda.forEach(food => {
-      const div = document.createElement('div');
-      div.className = 'dropdown-item';
+      const div = document.createElement('div'); div.className = 'dropdown-item';
       div.innerHTML = `<span>${food.description}</span> <span class="badge usda">USDA</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectUSDAFood(food.fdcId); };
       dropdown.appendChild(div);
     });
-    
-    if (history.length > 0 || usda.length > 0) {
-      dropdown.classList.remove('hidden');
-      dropdown.scrollTop = 0; 
-    }
+    if (history.length > 0 || usda.length > 0) { dropdown.classList.remove('hidden'); dropdown.scrollTop = 0; }
   }
 
   function clearDropdown() {
     clearTimeout(searchTimeout);
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
-    }
+    if (abortController) { abortController.abort(); abortController = null; }
     searchLoader.classList.add('hidden');
-    dropdown.innerHTML = '';
-    dropdown.classList.add('hidden');
-    dropdown.scrollTop = 0;
-    activeDropdownIndex = -1;
+    dropdown.innerHTML = ''; dropdown.classList.add('hidden'); dropdown.scrollTop = 0; activeDropdownIndex = -1;
   }
 
   async function selectUSDAFood(fdcId) {
-    clearDropdown();
-    searchInput.value = '';
+    clearDropdown(); searchInput.value = '';
     const details = await getUSDAFoodDetails(fdcId);
     if (details) { currentFood = details; populateForm(true); }
   }
 
   function selectHistoryFood(food) {
-    clearDropdown();
-    searchInput.value = '';
+    clearDropdown(); searchInput.value = '';
     currentFood = JSON.parse(JSON.stringify(food));
     populateForm(true);
   }
 
   function showQuickLog() {
     editingLogId = null;
-    currentFood = { source: 'custom', serving_size_g: 100, serving_name: '', macros: { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 }, micros: {} };
+    currentFood = { source: 'custom', serving_size_g: 100, base_unit: 'g', density: 1.0, serving_name: '', macros: { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 }, micros: {} };
     els.name.value = "";
     populateForm(false);
     formTitle.innerText = "Quick Log";
@@ -298,17 +248,17 @@ export function initLogFood(dashboardRef) {
     manualCalories = false;
     document.getElementById('cal-badge').classList.add('hidden');
     
-    if (currentFood.name !== undefined && els.name.value !== currentFood.name) {
-      els.name.value = currentFood.name;
-    }
+    if (currentFood.name !== undefined && els.name.value !== currentFood.name) els.name.value = currentFood.name;
     els.name.readOnly = false;
     
     els.serving_g.value = currentFood.serving_size_g;
     els.serving_unit.value = currentFood.serving_name || '';
+    els.base_unit.value = currentFood.base_unit || 'g';
     
     const isSaved = currentFood.id !== undefined;
     els.serving_g.disabled = isSaved;
     els.serving_unit.disabled = isSaved;
+    els.base_unit.disabled = isSaved; 
 
     els.servings.value = 1;
     els.total_g.value = currentFood.serving_size_g;
@@ -317,19 +267,18 @@ export function initLogFood(dashboardRef) {
     if (isSaved || editingLogId !== null) {
       if (saveLabel) saveLabel.classList.add('invisible');
       els.saveLibrary.checked = false;
+      els.saveOnlyBtn.classList.add('hidden');
     } else {
       if (saveLabel) saveLabel.classList.remove('invisible');
       els.saveLibrary.disabled = false;
       els.saveLibrary.checked = (currentFood.source === 'usda');
+      els.saveOnlyBtn.classList.remove('hidden');
     }
 
     const dashDateVal = document.getElementById('dash-date').value;
-    
-    // FIX: Timezone aware local date calculation
     const now = new Date();
     const localTodayDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     logDateInput.value = dashDateVal || localTodayDate;
-
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     logTimeInput.value = `${hh}:${mm}`;
@@ -337,15 +286,13 @@ export function initLogFood(dashboardRef) {
     updateLabelsAndScales();
 
     if (shouldFocus) {
-      setTimeout(() => {
-        els.servings.focus();
-        els.servings.select();
-      }, 50);
+      setTimeout(() => { els.servings.focus(); els.servings.select(); }, 50);
     }
   }
 
   function updateLabelsAndScales() {
     const unit = els.serving_unit.value.trim();
+    const baseU = els.base_unit.value; 
     const mult = parseFloat(els.servings.value) || 1;
     
     let labelText = "Servings";
@@ -353,8 +300,11 @@ export function initLogFood(dashboardRef) {
       const displayUnit = mult === 1 ? unit : (unit.endsWith('s') ? unit : `${unit}s`);
       labelText = `Servings (${displayUnit})`;
     }
+    
+    document.getElementById('serving-size-label').innerText = `Base Serving Size (${baseU})`;
     document.getElementById('serving-multiplier-label').innerText = labelText;
-    document.getElementById('serving-total-g-label').innerText = `Total Grams`;
+    document.getElementById('serving-total-g-label').innerText = `Total Amount (${baseU})`;
+    
     updateNutrientsFromMultiplier();
   }
 
@@ -370,14 +320,7 @@ export function initLogFood(dashboardRef) {
     const totalG = parseFloat(els.total_g.value) || 0;
     const mult = totalG / baseG;
     els.servings.value = mult.toFixed(2);
-    
-    const unit = els.serving_unit.value.trim();
-    if (unit) {
-      const displayUnit = mult === 1 ? unit : (unit.endsWith('s') ? unit : `${unit}s`);
-      document.getElementById('serving-multiplier-label').innerText = `Servings (${displayUnit})`;
-    }
-    
-    scaleNutrients(mult);
+    updateLabelsAndScales(); 
   }
 
   function updateFromBaseServingG() {
@@ -403,9 +346,7 @@ export function initLogFood(dashboardRef) {
     els.carbs.value = (currentFood.macros.carbs_g * mult).toFixed(1);
     els.fat.value = (currentFood.macros.fat_g * mult).toFixed(1);
     
-    if (!manualCalories) {
-      els.calories.value = Math.round((currentFood.macros.protein_g * 4 * mult) + (currentFood.macros.carbs_g * 4 * mult) + (currentFood.macros.fat_g * 9 * mult));
-    }
+    if (!manualCalories) els.calories.value = Math.round((currentFood.macros.protein_g * 4 * mult) + (currentFood.macros.carbs_g * 4 * mult) + (currentFood.macros.fat_g * 9 * mult));
 
     const micros = currentFood.micros || {};
     els.fiber.value = ((micros.fiber_g || 0) * mult).toFixed(1);
@@ -425,14 +366,34 @@ export function initLogFood(dashboardRef) {
   els.total_g.addEventListener('input', updateMultiplierFromTotalG);
   els.serving_unit.addEventListener('input', updateLabelsAndScales);
   els.serving_g.addEventListener('input', updateFromBaseServingG);
+  
+  // Convert metrics relative to food density factor when selecting units on UI
+  els.base_unit.addEventListener('change', (e) => {
+    const newUnit = e.target.value;
+    const oldUnit = currentFood.base_unit || 'g';
+    if (newUnit !== oldUnit) {
+      const d = currentFood.density || 1.0;
+      if (newUnit === 'ml' && oldUnit === 'g') {
+        for (let k in currentFood.macros) currentFood.macros[k] *= d;
+        if (currentFood.micros) {
+          for (let k in currentFood.micros) currentFood.micros[k] *= d;
+        }
+      } else if (newUnit === 'g' && oldUnit === 'ml') {
+        for (let k in currentFood.macros) currentFood.macros[k] /= d;
+        if (currentFood.micros) {
+          for (let k in currentFood.micros) currentFood.micros[k] /= d;
+        }
+      }
+      currentFood.base_unit = newUnit;
+      updateLabelsAndScales();
+    }
+  });
 
   document.querySelectorAll('.macro-input').forEach(input => {
     input.addEventListener('input', () => {
       syncManualInputToModel();
       if (!manualCalories) {
-        const p = parseFloat(els.protein.value) || 0;
-        const c = parseFloat(els.carbs.value) || 0;
-        const f = parseFloat(els.fat.value) || 0;
+        const p = parseFloat(els.protein.value) || 0; const c = parseFloat(els.carbs.value) || 0; const f = parseFloat(els.fat.value) || 0;
         els.calories.value = Math.round((p * 4) + (c * 4) + (f * 9));
       }
     });
@@ -448,6 +409,36 @@ export function initLogFood(dashboardRef) {
     syncManualInputToModel();
   });
 
+  // --- Save Only (No Logging) Listener ---
+  els.saveOnlyBtn.addEventListener('click', async () => {
+    const mult = parseFloat(els.servings.value) || 1;
+    const name = els.name.value.trim();
+    if (!name) return window.showToast("Please enter a name.", "error");
+
+    let finalSource = currentFood.source;
+    if (currentFood.source === 'usda') {
+      const p = parseFloat(els.protein.value);
+      const expectedP = parseFloat((currentFood.macros.protein_g * mult).toFixed(1));
+      if (p !== expectedP) {
+        const confirmed = await window.customConfirm("USDA Nutrients Modified", "You modified USDA nutrients. Save as modified?", false);
+        if (confirmed) finalSource = 'usda_modified';
+      }
+    }
+
+    const macroObj = { protein_g: parseFloat(els.protein.value)/mult, carbs_g: parseFloat(els.carbs.value)/mult, fat_g: parseFloat(els.fat.value)/mult, calories: parseFloat(els.calories.value)/mult };
+    
+    await db.foods.add({
+      name, source: finalSource, usda_fdc_id: currentFood.usda_fdc_id || null,
+      serving_size_g: parseFloat(els.serving_g.value), base_unit: els.base_unit.value, density: currentFood.density || 1.0, serving_name: els.serving_unit.value.trim(),
+      macros: macroObj, micros: currentFood.micros
+    });
+
+    window.showToast("Food saved to library!");
+    showQuickLog();
+    renderShortcuts();
+  });
+
+  // --- Log Food (With Optional Save) Listener ---
   els.submitBtn.addEventListener('click', async () => {
     const mult = parseFloat(els.servings.value) || 1;
     const name = els.name.value.trim();
@@ -457,16 +448,9 @@ export function initLogFood(dashboardRef) {
     if (currentFood.source === 'usda') {
       const p = parseFloat(els.protein.value);
       const expectedP = parseFloat((currentFood.macros.protein_g * mult).toFixed(1));
-      
       if (p !== expectedP) {
-        const confirmed = await window.customConfirm(
-          "USDA Nutrients Modified",
-          "You modified USDA nutrients. Update food definition in library for future logs too?",
-          false
-        );
-        if (confirmed) {
-          finalSource = 'usda_modified';
-        }
+        const confirmed = await window.customConfirm("USDA Nutrients Modified", "You modified USDA nutrients. Update food definition in library for future logs too?", false);
+        if (confirmed) finalSource = 'usda_modified';
       }
     }
 
@@ -476,7 +460,7 @@ export function initLogFood(dashboardRef) {
     if (!foodId && els.saveLibrary.checked && !editingLogId) {
       foodId = await db.foods.add({
         name, source: finalSource, usda_fdc_id: currentFood.usda_fdc_id || null,
-        serving_size_g: parseFloat(els.serving_g.value), serving_name: els.serving_unit.value.trim(),
+        serving_size_g: parseFloat(els.serving_g.value), base_unit: els.base_unit.value, density: currentFood.density || 1.0, serving_name: els.serving_unit.value.trim(),
         macros: macroObj, micros: currentFood.micros
       });
     }
@@ -488,6 +472,7 @@ export function initLogFood(dashboardRef) {
     const logPayload = {
       date: logDate, logged_at: loggedAtISO,
       food_id: foodId, food_name: name, serving_name: els.serving_unit.value.trim(),
+      base_unit: els.base_unit.value,
       servings: mult, serving_size_g: parseFloat(els.total_g.value),
       macros: { protein_g: parseFloat(els.protein.value), carbs_g: parseFloat(els.carbs.value), fat_g: parseFloat(els.fat.value), calories: parseFloat(els.calories.value) },
       micros: {
@@ -517,7 +502,7 @@ export function initLogFood(dashboardRef) {
     editingLogId = id;
     
     currentFood = {
-      source: 'custom', serving_size_g: log.serving_size_g / log.servings, serving_name: log.serving_name || '', name: log.food_name,
+      source: 'custom', serving_size_g: log.serving_size_g / log.servings, base_unit: log.base_unit || 'g', density: 1.0, serving_name: log.serving_name || '', name: log.food_name,
       macros: { protein_g: log.macros.protein_g / log.servings, carbs_g: log.macros.carbs_g / log.servings, fat_g: log.macros.fat_g / log.servings, calories: log.macros.calories / log.servings },
       micros: {}
     };
