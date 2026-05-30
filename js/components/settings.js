@@ -11,7 +11,8 @@ export function initSettings() {
     height: document.getElementById('calc-height'),
     weight: document.getElementById('calc-weight'),
     activity: document.getElementById('calc-activity'),
-    goal: document.getElementById('calc-goal')
+    goal: document.getElementById('calc-goal'),
+    proteinMultiplier: document.getElementById('calc-protein-multiplier') // NEW
   };
 
   const macroOutputs = {
@@ -41,6 +42,7 @@ export function initSettings() {
     const weight = parseFloat(calcInputs.weight.value) || 70;
     const activityFactor = parseFloat(calcInputs.activity.value) || 1.2;
     const goalAdjustment = parseFloat(calcInputs.goal.value) || 0;
+    const proteinFactor = parseFloat(calcInputs.proteinMultiplier.value) || 2.0; // NEW
 
     let bmr = 0;
     if (gender === 'male') {
@@ -55,7 +57,7 @@ export function initSettings() {
     const minSafetyLimit = gender === 'female' ? 1200 : 1500;
     warningEl.classList.toggle('hidden', targetCals >= minSafetyLimit);
 
-    const protein = Math.round(weight * 2.0); 
+    const protein = Math.round(weight * proteinFactor); // Calculated with user preference
     const fat = Math.round((targetCals * 0.25) / 9); 
     const carbs = Math.max(0, Math.round((targetCals - (protein * 4) - (fat * 9)) / 4));
 
@@ -75,9 +77,17 @@ export function initSettings() {
       macroOutputs.pro.value = profile.target_protein_g;
       macroOutputs.carb.value = profile.target_carbs_g;
       macroOutputs.fat.value = profile.target_fat_g;
+
+      // Load persistent inputs if they exist (Fixes refresh fallback)
+      if (profile.age !== undefined) calcInputs.age.value = profile.age;
+      if (profile.gender !== undefined) calcInputs.gender.value = profile.gender;
+      if (profile.height !== undefined) calcInputs.height.value = profile.height;
+      if (profile.weight !== undefined) calcInputs.weight.value = profile.weight;
+      if (profile.activity !== undefined) calcInputs.activity.value = profile.activity;
+      if (profile.goal !== undefined) calcInputs.goal.value = profile.goal;
+      if (profile.protein_multiplier !== undefined) calcInputs.proteinMultiplier.value = profile.protein_multiplier;
     }
     
-    // Load GitHub key if available
     const ghKey = getGithubApiKey();
     if (ghKey) document.getElementById('settings-github-key').value = ghKey;
 
@@ -91,7 +101,16 @@ export function initSettings() {
       target_calories: parseFloat(macroOutputs.cal.value) || 2000,
       target_protein_g: parseFloat(macroOutputs.pro.value) || 150,
       target_carbs_g: parseFloat(macroOutputs.carb.value) || 200,
-      target_fat_g: parseFloat(macroOutputs.fat.value) || 65
+      target_fat_g: parseFloat(macroOutputs.fat.value) || 65,
+      
+      // Save input states so they persist (Fixes refresh fallback)
+      age: parseInt(calcInputs.age.value) || 25,
+      gender: calcInputs.gender.value,
+      height: parseFloat(calcInputs.height.value) || 175,
+      weight: parseFloat(calcInputs.weight.value) || 70,
+      activity: calcInputs.activity.value,
+      goal: calcInputs.goal.value,
+      protein_multiplier: calcInputs.proteinMultiplier.value
     };
 
     await db.profile.put(payload);
