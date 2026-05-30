@@ -35,25 +35,64 @@ window.customConfirm = function(title, message, isDanger = false) {
 
     titleEl.innerText = title;
     msgEl.innerText = message;
-
-    if (isDanger) {
-      okBtn.className = 'btn btn-danger';
-    } else {
-      okBtn.className = 'btn';
-    }
-
+    okBtn.className = isDanger ? 'btn btn-danger' : 'btn';
     modal.classList.remove('hidden');
 
     const cleanUp = (result) => {
       modal.classList.add('hidden');
-      cancelBtn.onclick = null;
-      okBtn.onclick = null;
+      cancelBtn.onclick = null; okBtn.onclick = null;
       resolve(result);
     };
 
     cancelBtn.onclick = () => cleanUp(false);
     okBtn.onclick = () => cleanUp(true);
   });
+};
+
+// --- GLOBAL EMOJI PICKER ---
+const EMOJI_CATEGORIES = [
+  { name: 'Common', emojis: ['🍽️','🍲','🥣','🥗','🥪','🥩','🍗','🍔','🍕','🍣'] },
+  { name: 'Fruits', emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅'] },
+  { name: 'Vegetables', emojis: ['🍆','🥑','🫛','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠'] },
+  { name: 'Meat & Poultry', emojis: ['🥩','🍗','🍖','🥓'] },
+  { name: 'Seafood', emojis: ['🐟','🐠','🐡','🦐','🦑','🐙','🦞','🦀','🦪'] },
+  { name: 'Dairy & Eggs', emojis: ['🥚','🍳','🧀','🧈','🥛'] },
+  { name: 'Prepared Foods', emojis: ['🍞','🥐','🥖','🫓','🥨','🥯','🥞','🧇','🍔','🌭','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🫔','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟'] },
+  { name: 'Asian Foods', emojis: ['🍚','🍙','🍘','🍢','🍡','🍧','🍨','🥮','🥠'] },
+  { name: 'Sweets & Desserts', emojis: ['🍦','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯'] },
+  { name: 'Beverages', emojis: ['🍼','☕','🫖','🍵','🍶','🍾','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🥤','🧋','🧃','🧉','🧊'] },
+  { name: 'Other', emojis: ['🧂','🍿','🥜','🌰','🍄'] }
+];
+
+window.openEmojiPicker = function(callback) {
+  const modal = document.getElementById('emoji-picker-modal');
+  const container = document.getElementById('emoji-picker-container');
+  const cancelBtn = document.getElementById('btn-close-emoji-picker');
+
+  container.innerHTML = '';
+  EMOJI_CATEGORIES.forEach(cat => {
+    const title = document.createElement('div');
+    title.className = 'emoji-category-title';
+    title.innerText = cat.name;
+    container.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'emoji-grid';
+    cat.emojis.forEach(emj => {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-btn-item';
+      btn.innerText = emj;
+      btn.onclick = () => {
+        modal.classList.add('hidden');
+        callback(emj);
+      };
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+  });
+
+  cancelBtn.onclick = () => modal.classList.add('hidden');
+  modal.classList.remove('hidden');
 };
 
 document.addEventListener('DOMContentLoaded', async () => {

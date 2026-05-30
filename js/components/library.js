@@ -8,6 +8,7 @@ export function initLibrary() {
   const editMicrosPanel = document.getElementById('edit-micros-panel');
 
   const editEls = {
+    emojiBtn: document.getElementById('edit-lib-emoji-btn'), // Controlled Emoji Button
     name: document.getElementById('edit-lib-name'), 
     serving_g: document.getElementById('edit-lib-serving-g'),
     base_unit: document.getElementById('edit-lib-base-unit'), 
@@ -34,6 +35,12 @@ export function initLibrary() {
 
   let activeEditId = null;
 
+  editEls.emojiBtn.addEventListener('click', () => {
+    window.openEmojiPicker((emj) => {
+      editEls.emojiBtn.innerText = emj;
+    });
+  });
+
   toggleEditMicrosBtn.addEventListener('click', () => {
     const isHidden = editMicrosPanel.classList.toggle('hidden');
     toggleEditMicrosBtn.innerText = isHidden ? "Show Advanced Micronutrients ▾" : "Hide Advanced Micronutrients ▴";
@@ -51,12 +58,13 @@ export function initLibrary() {
       div.className = 'list-item';
       let badgeClass = food.source === 'custom' ? 'history' : (food.source === 'composite' ? 'composite' : 'usda');
       const unit = food.base_unit || 'g'; 
+      const emj = food.emoji || '🍽️';
 
       div.innerHTML = `
         <div class="list-item-header">
           <div class="list-item-title">
             <button class="btn-favorite ${food.is_favorite ? 'active' : ''}" data-id="${food.id}" title="Toggle Favorite">★</button>
-            ${food.name} <span class="badge ${badgeClass}">${food.source}</span>
+            ${emj} ${food.name} <span class="badge ${badgeClass}">${food.source}</span>
           </div>
           <div class="list-item-actions">
             <button class="btn-secondary edit-food-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" data-id="${food.id}" data-source="${food.source}">✎ Edit</button>
@@ -112,6 +120,7 @@ export function initLibrary() {
     if (!food) return;
 
     activeEditId = id;
+    editEls.emojiBtn.innerText = food.emoji || '🍽️';
     editEls.name.value = food.name;
     editEls.serving_g.value = food.serving_size_g;
     editEls.base_unit.value = food.base_unit || 'g'; 
@@ -148,6 +157,7 @@ export function initLibrary() {
       name: editEls.name.value.trim(), serving_size_g: parseFloat(editEls.serving_g.value) || 100, 
       base_unit: editEls.base_unit.value, 
       serving_name: editEls.serving_unit.value.trim(),
+      emoji: editEls.emojiBtn.innerText,
       density: parseFloat(editEls.density.value) || 1.0,
       macros: { protein_g: parseFloat(editEls.protein.value)||0, carbs_g: parseFloat(editEls.carbs.value)||0, fat_g: parseFloat(editEls.fat.value)||0, calories: parseFloat(editEls.calories.value)||0 },
       micros: {

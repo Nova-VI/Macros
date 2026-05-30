@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { searchUSDA, getUSDAFoodDetails } from '../usda.js';
+import { fetchFoodEmoji } from '../llm.js';
 
 export function initRecipeComposer() {
   const searchInput = document.getElementById('recipe-search');
@@ -7,6 +8,7 @@ export function initRecipeComposer() {
   const listEl = document.getElementById('recipe-ingredient-list');
   const totalGEl = document.getElementById('recipe-total-g');
   const recipeNameEl = document.getElementById('recipe-name');
+  const recipeEmojiBtn = document.getElementById('recipe-emoji-btn'); // Controlled UI
   const recipeUnitEl = document.getElementById('recipe-unit');
   const weightModal = document.getElementById('recipe-weight-modal');
   const weightInput = document.getElementById('recipe-weight-input');
@@ -22,25 +24,23 @@ export function initRecipeComposer() {
   let editingRecipeId = null;
   let activeDropdownIndex = -1;
 
-  // --- KEYBOARD NAVIGATION FOR SEARCH DROPDOWN ---
+  recipeEmojiBtn.addEventListener('click', () => {
+    window.openEmojiPicker((emj) => {
+      recipeEmojiBtn.innerText = emj;
+    });
+  });
+
   searchInput.addEventListener('keydown', (e) => {
     const items = dropdown.querySelectorAll('.dropdown-item');
     if (!items.length) return;
-
     if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
-      updateDropdownHighlight(items);
+      e.preventDefault(); activeDropdownIndex = (activeDropdownIndex + 1) % items.length; updateDropdownHighlight(items);
     } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
-      updateDropdownHighlight(items);
+      e.preventDefault(); activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length; updateDropdownHighlight(items);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const targetIdx = activeDropdownIndex === -1 ? 0 : activeDropdownIndex;
-      if (items[targetIdx]) {
-        items[targetIdx].click();
-      }
+      if (items[targetIdx]) items[targetIdx].click();
     } else if (e.key === 'Escape') {
       clearDropdown();
     }
@@ -49,8 +49,7 @@ export function initRecipeComposer() {
   function updateDropdownHighlight(items) {
     items.forEach((item, index) => {
       if (index === activeDropdownIndex) {
-        item.classList.add('kbd-active');
-        item.scrollIntoView({ block: 'nearest' });
+        item.classList.add('kbd-active'); item.scrollIntoView({ block: 'nearest' });
       } else {
         item.classList.remove('kbd-active');
       }
@@ -62,7 +61,7 @@ export function initRecipeComposer() {
     const query = e.target.value.trim();
     if (query.length < 2) return dropdown.classList.add('hidden');
 
-    if (abortController) abortController.abort(); // Cancel pending network fetches
+    if (abortController) abortController.abort(); 
 
     searchTimeout = setTimeout(async () => {
       abortController = new AbortController();
@@ -72,8 +71,8 @@ export function initRecipeComposer() {
       dropdown.innerHTML = '';
       activeDropdownIndex = -1; 
       
-      history.forEach(food => addDropdownItem(food.name, 'History', () => openWeightModal(food)));
-      usda.forEach(food => addDropdownItem(food.description, 'USDA', async () => openWeightModal(await getUSDAFoodDetails(food.fdcId))));
+      history.forEach(food => addDropdownItem(`${food.emoji || '🍽️'} ${food.name}`, 'History', () => openWeightModal(food)));
+      usda.forEach(food => addDropdownItem(`🍽️ ${food.description}`, 'USDA', async () => openWeightModal(await getUSDAFoodDetails(food.fdcId))));
       
       if (history.length > 0 || usda.length > 0) {
         dropdown.classList.remove('hidden');
@@ -84,14 +83,8 @@ export function initRecipeComposer() {
 
   function clearDropdown() {
     clearTimeout(searchTimeout);
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
-    }
-    dropdown.innerHTML = '';
-    dropdown.classList.add('hidden');
-    dropdown.scrollTop = 0;
-    activeDropdownIndex = -1;
+    if (abortController) { abortController.abort(); abortController = null; }
+    dropdown.innerHTML = ''; dropdown.classList.add('hidden'); dropdown.scrollTop = 0; activeDropdownIndex = -1;
   }
 
   function addDropdownItem(name, type, onClick) {
@@ -124,7 +117,7 @@ export function initRecipeComposer() {
 
     ingredients.push({
       food_id: targetFoodForWeight.id || null, usda_fdc_id: targetFoodForWeight.usda_fdc_id || null,
-      name: targetFoodForWeight.name, quantity_g: grams, source: targetFoodForWeight.source,
+      name: targetFoodForWeight.name, emoji: targetFoodForWeight.emoji || '🍽️', quantity_g: grams, source: targetFoodForWeight.source,
       macros: { calories: targetFoodForWeight.macros.calories * mult, protein_g: targetFoodForWeight.macros.protein_g * mult, carbs_g: targetFoodForWeight.macros.carbs_g * mult, fat_g: targetFoodForWeight.macros.fat_g * mult },
       micros: microsObj
     });
@@ -142,9 +135,10 @@ export function initRecipeComposer() {
 
       const div = document.createElement('div');
       div.className = 'list-item';
+      const emj = ing.emoji || '🍽️';
       div.innerHTML = `
         <div class="list-item-header">
-          <div class="list-item-title">${ing.name} <span class="text-muted text-sm">(${ing.quantity_g}g)</span></div>
+          <div class="list-item-title">${emj} ${ing.name} <span class="text-muted text-sm">(${ing.quantity_g}g)</span></div>
           <button class="btn-ghost-danger" onclick="window.removeRecipeIngredient(${index})" style="padding: 0.2rem 0.5rem;">✕</button>
         </div>
         <div class="macro-stats">
@@ -204,27 +198,49 @@ export function initRecipeComposer() {
     const name = recipeNameEl.value.trim();
     if(!name || ingredients.length === 0) return window.showToast("Enter a recipe name and add ingredients.", "error");
 
+    let userEmoji = (recipeEmojiBtn.innerText === '🍽️') ? '' : recipeEmojiBtn.innerText;
+    let triggerAI = false;
+    if (!userEmoji) {
+      userEmoji = '🍽️';
+      triggerAI = true;
+    }
+
     const aggregatedMicros = { fiber_g:0, sugar_g:0, sodium_mg:0, saturated_fat_g:0, cholesterol_mg:0, potassium_mg:0, vitamin_a_ug:0, vitamin_c_mg:0, vitamin_d_ug:0, calcium_mg:0, iron_mg:0 };
     ingredients.forEach(i => { for (const k in aggregatedMicros) aggregatedMicros[k] += (i.micros?.[k] || 0); });
 
     const payload = {
       name: name, source: 'composite', serving_size_g: parseFloat(totalGEl.value), serving_name: recipeUnitEl.value.trim(),
-      ingredients: ingredients, 
+      emoji: userEmoji, ingredients: ingredients, 
       macros: { calories: parseFloat(document.getElementById('recipe-cal').innerText), protein_g: parseFloat(document.getElementById('recipe-pro').innerText), carbs_g: parseFloat(document.getElementById('recipe-carb').innerText), fat_g: parseFloat(document.getElementById('recipe-fat').innerText) },
       micros: aggregatedMicros
     };
 
-    if (editingRecipeId) { await db.foods.update(editingRecipeId, payload); window.showToast("Recipe updated successfully!"); } 
-    else { await db.foods.add(payload); window.showToast("Recipe saved to library!"); }
+    if (editingRecipeId) { 
+      await db.foods.update(editingRecipeId, payload); 
+      window.showToast("Recipe updated successfully!"); 
+      if (triggerAI) fetchAndSaveAIEmoji(editingRecipeId, name);
+    } else { 
+      const newId = await db.foods.add(payload); 
+      window.showToast("Recipe saved to library!"); 
+      if (triggerAI) fetchAndSaveAIEmoji(newId, name);
+    }
 
     resetForm();
   });
+
+  async function fetchAndSaveAIEmoji(foodId, name) {
+    const aiEmoji = await fetchFoodEmoji(name);
+    if (aiEmoji && aiEmoji !== '🍽️') {
+      await db.foods.update(foodId, { emoji: aiEmoji });
+    }
+  }
 
   window.editCompositeRecipe = async (id) => {
     const food = await db.foods.get(id);
     if (!food || food.source !== 'composite') return;
     editingRecipeId = id;
     recipeNameEl.value = food.name; recipeUnitEl.value = food.serving_name || '';
+    recipeEmojiBtn.innerText = food.emoji || '🍽️';
     ingredients = food.ingredients || [];
     renderIngredients();
     
@@ -236,7 +252,7 @@ export function initRecipeComposer() {
   };
 
   function resetForm() {
-    recipeNameEl.value = ''; recipeUnitEl.value = ''; searchInput.value = '';
+    recipeNameEl.value = ''; recipeEmojiBtn.innerText = '🍽️'; recipeUnitEl.value = ''; searchInput.value = '';
     ingredients = []; editingRecipeId = null; renderIngredients();
   }
 

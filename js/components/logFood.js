@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { searchUSDA, getUSDAFoodDetails } from '../usda.js';
+import { fetchFoodEmoji } from '../llm.js';
 
 export function initLogFood(dashboardRef) {
   const searchInput = document.getElementById('food-search');
@@ -14,6 +15,7 @@ export function initLogFood(dashboardRef) {
   const formContainer = document.getElementById('log-form-container');
   
   const els = {
+    emojiBtn: document.getElementById('log-emoji-btn'), // Controlled Emoji Button
     name: document.getElementById('log-name'),
     serving_g: document.getElementById('log-serving-g'),
     base_unit: document.getElementById('log-base-unit'),
@@ -41,6 +43,14 @@ export function initLogFood(dashboardRef) {
   let manualCalories = false;
   let editingLogId = null; 
   let activeDropdownIndex = -1;
+
+  // Open the Emoji Picker Modal
+  els.emojiBtn.addEventListener('click', () => {
+    window.openEmojiPicker((selectedEmoji) => {
+      els.emojiBtn.innerText = selectedEmoji;
+      if (currentFood) currentFood.emoji = selectedEmoji;
+    });
+  });
 
   searchInput.addEventListener('keydown', (e) => {
     const items = dropdown.querySelectorAll('.dropdown-item');
@@ -96,8 +106,9 @@ export function initLogFood(dashboardRef) {
         const card = document.createElement('div');
         card.className = 'shortcut-card';
         const unit = food.base_unit || 'g'; 
+        const emj = food.emoji || '🍽️';
         card.innerHTML = `
-          <div class="title" title="${food.name}">${food.name}</div>
+          <div class="title" title="${food.name}">${emj} ${food.name}</div>
           <div class="cal">${Math.round(food.macros.calories)} kcal</div>
           <div class="meta">${food.serving_size_g}${unit} ${food.serving_name || ''}</div>
         `;
@@ -150,6 +161,11 @@ export function initLogFood(dashboardRef) {
         currentFood.id = undefined; currentFood.source = 'custom';
         els.serving_g.disabled = false; els.serving_unit.disabled = false;
         els.base_unit.disabled = false; 
+        
+        // --- BUG FIX: Reset the emoji when breaking the library link ---
+        currentFood.emoji = '';
+        els.emojiBtn.innerText = '🍽️';
+
         const saveLabel = els.saveLibrary.closest('.custom-checkbox');
         if (saveLabel) saveLabel.classList.remove('invisible');
         els.saveLibrary.disabled = false;
@@ -172,6 +188,10 @@ export function initLogFood(dashboardRef) {
         els.serving_g.disabled = false; els.serving_unit.disabled = false;
         els.base_unit.disabled = false;
         
+        // --- BUG FIX: Reset the emoji when typing an unrecognized food ---
+        currentFood.emoji = '';
+        els.emojiBtn.innerText = '🍽️';
+
         const saveLabel = els.saveLibrary.closest('.custom-checkbox');
         if (saveLabel) saveLabel.classList.remove('invisible');
         els.saveLibrary.checked = false; els.saveLibrary.disabled = false;
@@ -203,13 +223,14 @@ export function initLogFood(dashboardRef) {
     history.forEach(food => {
       const div = document.createElement('div'); div.className = 'dropdown-item';
       let badge = food.source === 'composite' ? 'composite' : 'history';
-      div.innerHTML = `<span>${food.name} ${food.serving_name ? `(${food.serving_name})` : ''}</span> <span class="badge ${badge}">${food.source}</span>`;
+      const emj = food.emoji || '🍽️';
+      div.innerHTML = `<span>${emj} ${food.name} ${food.serving_name ? `(${food.serving_name})` : ''}</span> <span class="badge ${badge}">${food.source}</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectHistoryFood(food); };
       dropdown.appendChild(div);
     });
     usda.forEach(food => {
       const div = document.createElement('div'); div.className = 'dropdown-item';
-      div.innerHTML = `<span>${food.description}</span> <span class="badge usda">USDA</span>`;
+      div.innerHTML = `<span>🍽️ ${food.description}</span> <span class="badge usda">USDA</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectUSDAFood(food.fdcId); };
       dropdown.appendChild(div);
     });
@@ -237,8 +258,9 @@ export function initLogFood(dashboardRef) {
 
   function showQuickLog() {
     editingLogId = null;
-    currentFood = { source: 'custom', serving_size_g: 100, base_unit: 'g', density: 1.0, serving_name: '', macros: { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 }, micros: {} };
+    currentFood = { source: 'custom', serving_size_g: 100, base_unit: 'g', density: 1.0, serving_name: '', emoji: '', macros: { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 }, micros: {} };
     els.name.value = "";
+    els.emojiBtn.innerText = "🍽️";
     populateForm(false);
     formTitle.innerText = "Quick Log";
   }
@@ -248,7 +270,11 @@ export function initLogFood(dashboardRef) {
     manualCalories = false;
     document.getElementById('cal-badge').classList.add('hidden');
     
-    if (currentFood.name !== undefined && els.name.value !== currentFood.name) els.name.value = currentFood.name;
+    if (currentFood.name !== undefined && els.name.value !== currentFood.name) els.name.value = currentFood.name || '';
+    
+    // Set emoji
+    els.emojiBtn.innerText = currentFood.emoji || '🍽️';
+    
     els.name.readOnly = false;
     
     els.serving_g.value = currentFood.serving_size_g;
@@ -367,7 +393,6 @@ export function initLogFood(dashboardRef) {
   els.serving_unit.addEventListener('input', updateLabelsAndScales);
   els.serving_g.addEventListener('input', updateFromBaseServingG);
   
-  // Convert metrics relative to food density factor when selecting units on UI
   els.base_unit.addEventListener('change', (e) => {
     const newUnit = e.target.value;
     const oldUnit = currentFood.base_unit || 'g';
@@ -375,14 +400,10 @@ export function initLogFood(dashboardRef) {
       const d = currentFood.density || 1.0;
       if (newUnit === 'ml' && oldUnit === 'g') {
         for (let k in currentFood.macros) currentFood.macros[k] *= d;
-        if (currentFood.micros) {
-          for (let k in currentFood.micros) currentFood.micros[k] *= d;
-        }
+        if (currentFood.micros) { for (let k in currentFood.micros) currentFood.micros[k] *= d; }
       } else if (newUnit === 'g' && oldUnit === 'ml') {
         for (let k in currentFood.macros) currentFood.macros[k] /= d;
-        if (currentFood.micros) {
-          for (let k in currentFood.micros) currentFood.micros[k] /= d;
-        }
+        if (currentFood.micros) { for (let k in currentFood.micros) currentFood.micros[k] /= d; }
       }
       currentFood.base_unit = newUnit;
       updateLabelsAndScales();
@@ -409,11 +430,22 @@ export function initLogFood(dashboardRef) {
     syncManualInputToModel();
   });
 
-  // --- Save Only (No Logging) Listener ---
+  // Background LLM Handler
+  async function handleAIEmoji(foodId, logId, name) {
+    const aiEmoji = await fetchFoodEmoji(name);
+    if (aiEmoji && aiEmoji !== '🍽️') {
+      if (foodId) await db.foods.update(foodId, { emoji: aiEmoji });
+      if (logId) await db.logs.update(logId, { emoji: aiEmoji });
+      dashboardRef.renderDashboard();
+      renderShortcuts();
+    }
+  }
+
+  // Save Only 
   els.saveOnlyBtn.addEventListener('click', async () => {
     const mult = parseFloat(els.servings.value) || 1;
     const name = els.name.value.trim();
-    if (!name) return window.showToast("Please enter a name.", "error");
+    if (!name) return window.showToast("Name required to save to library.", "error");
 
     let finalSource = currentFood.source;
     if (currentFood.source === 'usda') {
@@ -425,24 +457,40 @@ export function initLogFood(dashboardRef) {
       }
     }
 
+    // Determine user emoji status
+    let userEmoji = (els.emojiBtn.innerText === '🍽️') ? '' : els.emojiBtn.innerText;
+    let triggerAI = false;
+    if (!userEmoji) {
+      userEmoji = '🍽️';
+      triggerAI = true; 
+    }
+
     const macroObj = { protein_g: parseFloat(els.protein.value)/mult, carbs_g: parseFloat(els.carbs.value)/mult, fat_g: parseFloat(els.fat.value)/mult, calories: parseFloat(els.calories.value)/mult };
     
-    await db.foods.add({
+    const foodId = await db.foods.add({
       name, source: finalSource, usda_fdc_id: currentFood.usda_fdc_id || null,
       serving_size_g: parseFloat(els.serving_g.value), base_unit: els.base_unit.value, density: currentFood.density || 1.0, serving_name: els.serving_unit.value.trim(),
-      macros: macroObj, micros: currentFood.micros
+      emoji: userEmoji, macros: macroObj, micros: currentFood.micros
     });
+
+    if (triggerAI) handleAIEmoji(foodId, null, name);
 
     window.showToast("Food saved to library!");
     showQuickLog();
     renderShortcuts();
   });
 
-  // --- Log Food (With Optional Save) Listener ---
+  // Log Food
   els.submitBtn.addEventListener('click', async () => {
     const mult = parseFloat(els.servings.value) || 1;
-    const name = els.name.value.trim();
-    if (!name) return window.showToast("Please enter a name.", "error");
+    
+    let name = els.name.value.trim();
+    const isLibrarySave = !editingLogId && els.saveLibrary.checked;
+    
+    if (!name) {
+      if (isLibrarySave) return window.showToast("Name required to save to library.", "error");
+      name = "Unnamed Food";
+    }
 
     let finalSource = currentFood.source;
     if (currentFood.source === 'usda') {
@@ -454,14 +502,22 @@ export function initLogFood(dashboardRef) {
       }
     }
 
+    let userEmoji = (els.emojiBtn.innerText === '🍽️') ? '' : els.emojiBtn.innerText;
+    let triggerAI = false;
+    
+    if (!userEmoji) {
+      userEmoji = '🍽️';
+      if (isLibrarySave) triggerAI = true;
+    }
+
     let foodId = currentFood.id || null;
     const macroObj = { protein_g: parseFloat(els.protein.value)/mult, carbs_g: parseFloat(els.carbs.value)/mult, fat_g: parseFloat(els.fat.value)/mult, calories: parseFloat(els.calories.value)/mult };
     
-    if (!foodId && els.saveLibrary.checked && !editingLogId) {
+    if (!foodId && isLibrarySave) {
       foodId = await db.foods.add({
         name, source: finalSource, usda_fdc_id: currentFood.usda_fdc_id || null,
         serving_size_g: parseFloat(els.serving_g.value), base_unit: els.base_unit.value, density: currentFood.density || 1.0, serving_name: els.serving_unit.value.trim(),
-        macros: macroObj, micros: currentFood.micros
+        emoji: userEmoji, macros: macroObj, micros: currentFood.micros
       });
     }
 
@@ -472,7 +528,7 @@ export function initLogFood(dashboardRef) {
     const logPayload = {
       date: logDate, logged_at: loggedAtISO,
       food_id: foodId, food_name: name, serving_name: els.serving_unit.value.trim(),
-      base_unit: els.base_unit.value,
+      base_unit: els.base_unit.value, emoji: userEmoji,
       servings: mult, serving_size_g: parseFloat(els.total_g.value),
       macros: { protein_g: parseFloat(els.protein.value), carbs_g: parseFloat(els.carbs.value), fat_g: parseFloat(els.fat.value), calories: parseFloat(els.calories.value) },
       micros: {
@@ -483,13 +539,16 @@ export function initLogFood(dashboardRef) {
       }
     };
 
+    let logId = null;
     if (editingLogId) {
       await db.logs.update(editingLogId, logPayload);
       window.showToast("Daily log saved!");
     } else {
-      await db.logs.add(logPayload);
+      logId = await db.logs.add(logPayload);
       window.showToast("Food logged successfully!");
     }
+
+    if (triggerAI && foodId) handleAIEmoji(foodId, logId, name);
 
     showQuickLog();
     renderShortcuts();
@@ -502,7 +561,7 @@ export function initLogFood(dashboardRef) {
     editingLogId = id;
     
     currentFood = {
-      source: 'custom', serving_size_g: log.serving_size_g / log.servings, base_unit: log.base_unit || 'g', density: 1.0, serving_name: log.serving_name || '', name: log.food_name,
+      source: 'custom', serving_size_g: log.serving_size_g / log.servings, base_unit: log.base_unit || 'g', density: 1.0, serving_name: log.serving_name || '', name: log.food_name, emoji: log.emoji || '🍽️',
       macros: { protein_g: log.macros.protein_g / log.servings, carbs_g: log.macros.carbs_g / log.servings, fat_g: log.macros.fat_g / log.servings, calories: log.macros.calories / log.servings },
       micros: {}
     };

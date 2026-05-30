@@ -87,7 +87,6 @@ export function initDashboard() {
 
     const goals = profile || { target_calories: 2000, target_protein_g: 150, target_carbs_g: 200, target_fat_g: 65 };
 
-    // --- TIMELINE HEADER FORMATTING WITH COUNTER BADGE ---
     const titleEl = document.getElementById('dash-log-title');
     if (titleEl) {
       const now = new Date();
@@ -101,13 +100,11 @@ export function initDashboard() {
       tomorrow.setDate(now.getDate() + 1);
       const localTomorrowStr = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-      // Build sleek entry counter pill
       const count = logs.length;
       const countBadge = count > 0 
         ? `<span class="badge" style="background: var(--surface-hover); color: var(--text-muted); font-size: 0.75rem; text-transform: lowercase; margin-left: 0.5rem; border: 1px solid var(--border);">${count} logged</span>` 
         : '';
 
-      // Render clean date text (excluding redundant "Logs" suffix)
       if (selectedDate === localTodayStr) {
         titleEl.innerHTML = `Today ${countBadge}`;
       } else if (selectedDate === localYesterdayStr) {
@@ -120,7 +117,6 @@ export function initDashboard() {
         const monthName = dObj.toLocaleDateString('en-US', { month: 'short' });
         const dayNum = dObj.getDate();
         
-        // FIX: Append year conditionally if it's not the current year
         const selectedYear = dObj.getFullYear();
         const currentYear = new Date().getFullYear();
         const yearString = selectedYear !== currentYear ? `, ${selectedYear}` : '';
@@ -129,7 +125,6 @@ export function initDashboard() {
       }
     }
 
-    // Linear Bar just for Calories
     if (els.calTxt) els.calTxt.innerText = formatText(totals.cal, goals.target_calories, 'kcal');
     
     if (els.calBar) {
@@ -140,26 +135,15 @@ export function initDashboard() {
       else if (calPercent >= 90) els.calBar.classList.add('warning');
     }
 
-    // Text & Custom Fill Bars for Macros
     if (els.proTxt) els.proTxt.innerText = formatText(totals.pro, goals.target_protein_g, 'g');
-    if (els.proFill) {
-      const proPercent = Math.min((totals.pro / Math.max(1, goals.target_protein_g)) * 100, 100);
-      els.proFill.style.width = `${proPercent}%`;
-    }
+    if (els.proFill) els.proFill.style.width = `${Math.min((totals.pro / Math.max(1, goals.target_protein_g)) * 100, 100)}%`;
 
     if (els.carbTxt) els.carbTxt.innerText = formatText(totals.carb, goals.target_carbs_g, 'g');
-    if (els.carbFill) {
-      const carbPercent = Math.min((totals.carb / Math.max(1, goals.target_carbs_g)) * 100, 100);
-      els.carbFill.style.width = `${carbPercent}%`;
-    }
+    if (els.carbFill) els.carbFill.style.width = `${Math.min((totals.carb / Math.max(1, goals.target_carbs_g)) * 100, 100)}%`;
 
     if (els.fatTxt) els.fatTxt.innerText = formatText(totals.fat, goals.target_fat_g, 'g');
-    if (els.fatFill) {
-      const fatPercent = Math.min((totals.fat / Math.max(1, goals.target_fat_g)) * 100, 100);
-      els.fatFill.style.width = `${fatPercent}%`;
-    }
+    if (els.fatFill) els.fatFill.style.width = `${Math.min((totals.fat / Math.max(1, goals.target_fat_g)) * 100, 100)}%`;
 
-    // Chart.js Doughnut
     const chartCanvas = document.getElementById('macroPieChart');
     if (chartCanvas) {
       const ctx = chartCanvas.getContext('2d');
@@ -182,15 +166,11 @@ export function initDashboard() {
           responsive: true,
           maintainAspectRatio: false,
           cutout: '78%',
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: hasData }
-          }
+          plugins: { legend: { display: false }, tooltip: { enabled: hasData } }
         }
       });
     }
 
-    // Render Logs List
     logList.innerHTML = '';
     if (logs.length === 0) {
       logList.innerHTML = `<p class="text-muted text-sm text-center" style="padding: 20px 0;">No food logged yet for this day.</p>`;
@@ -214,10 +194,13 @@ export function initDashboard() {
         timeStr = new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       }
 
+      // Format emoji
+      const emj = log.emoji || '🍽️';
+
       item.innerHTML = `
         <div class="list-item-header">
           <div class="list-item-title">
-            ${log.food_name} 
+            <span style="margin-right: 4px;">${emj}</span> ${log.food_name} 
             <span style="font-size: 0.75rem; font-weight: 500; background: var(--surface-hover); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted);">${timeStr}</span>
             <span class="text-muted text-sm" style="font-weight: 400;">(${window.formatVal(log.servings)} ${servingUnit})</span>
           </div>

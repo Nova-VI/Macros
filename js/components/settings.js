@@ -1,4 +1,4 @@
-import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded } from '../db.js';
+import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded, getGithubApiKey, setGithubApiKey } from '../db.js';
 
 export function initSettings() {
   const calcMethodSelect = document.getElementById('goal-calc-method');
@@ -76,6 +76,11 @@ export function initSettings() {
       macroOutputs.carb.value = profile.target_carbs_g;
       macroOutputs.fat.value = profile.target_fat_g;
     }
+    
+    // Load GitHub key if available
+    const ghKey = getGithubApiKey();
+    if (ghKey) document.getElementById('settings-github-key').value = ghKey;
+
     performLiveCalculations();
   }
 
@@ -110,6 +115,12 @@ export function initSettings() {
     const key = document.getElementById('settings-api-key').value;
     setApiKey(key);
     window.showToast("USDA Access Key saved!");
+  });
+  
+  document.getElementById('btn-save-github').addEventListener('click', () => {
+    const key = document.getElementById('settings-github-key').value;
+    setGithubApiKey(key);
+    window.showToast("GitHub AI Key saved!");
   });
 
   const includeBrandedCheckbox = document.getElementById('settings-include-branded');

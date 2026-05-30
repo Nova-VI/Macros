@@ -38,6 +38,14 @@ export function setIncludeBranded(isIncluded) {
   localStorage.setItem('usda_include_branded', isIncluded ? 'true' : 'false');
 }
 
+// NEW: GitHub Models API Key for Emoji AI
+export function getGithubApiKey() {
+  return localStorage.getItem('github_api_key');
+}
+export function setGithubApiKey(key) {
+  localStorage.setItem('github_api_key', key.trim());
+}
+
 export async function exportDatabaseJSON() {
   const data = {
     foods: await db.foods.toArray(),

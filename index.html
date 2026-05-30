@@ -8,14 +8,13 @@
   <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <!-- CSS Patch for Date Inputs -->
+  <!-- CSS Patch for Date Inputs & Emoji Picker -->
   <style>
     input[type="date"] {
       width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-color);
       border: 1px solid var(--border); color: var(--text-main);
       border-radius: var(--radius); font-size: 1rem; transition: border-color 0.2s;
-      color-scheme: dark; /* Fixes the calendar icon color in dark mode */
-      font-family: inherit;
+      color-scheme: dark; font-family: inherit;
     }
     input[type="date"]:focus { outline: none; border-color: var(--primary); }
     
@@ -24,6 +23,20 @@
       background: var(--surface-hover);
     }
     input[type="date"].input-inline:hover { background: var(--border); }
+
+    /* Emoji Picker Styles */
+    .emoji-category-title {
+      font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; margin-bottom: 0.5rem; 
+      text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+    }
+    .emoji-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px;
+    }
+    .emoji-btn-item {
+      background: transparent; border: none; font-size: 1.4rem; cursor: pointer; 
+      padding: 0.25rem; border-radius: 6px; transition: background 0.2s; text-align: center;
+    }
+    .emoji-btn-item:hover { background: var(--surface-hover); }
   </style>
 </head>
 <body>
@@ -63,20 +76,16 @@
           <button id="btn-toggle-view" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Show Remaining</button>
         </div>
         
-        <!-- Calories Progress Bar -->
         <div class="macro-bar-container mb-2">
           <div class="macro-label"><span>Calories</span> <span id="dash-cal-text">0 / 0 kcal</span></div>
           <div class="progress-bg"><div class="progress-fill" id="dash-cal-bar"></div></div>
         </div>
 
-        <!-- Macro Doughnut Chart & Custom Fill Legends -->
         <div class="macro-pie-container">
           <div class="chart-wrapper">
             <canvas id="macroPieChart"></canvas>
           </div>
           <div class="macro-stats-vertical">
-            
-            <!-- PROTEIN ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-pro-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(16, 185, 129, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -86,7 +95,6 @@
               <div id="dash-pro-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
 
-            <!-- CARBS ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-carb-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(59, 130, 246, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -96,7 +104,6 @@
               <div id="dash-carb-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
 
-            <!-- FAT ROW -->
             <div style="position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
               <div id="dash-fat-fill" style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: rgba(245, 158, 11, 0.25); z-index: 0; transition: width 0.5s ease; pointer-events: none;"></div>
               <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 0.6rem;">
@@ -105,7 +112,6 @@
               </div>
               <div id="dash-fat-text" style="position: relative; z-index: 1; font-size: 0.9rem; font-weight: 600;">0g / 0g</div>
             </div>
-
           </div>
         </div>
       </div>
@@ -128,7 +134,6 @@
 
       <div class="layout-sidebar">
         
-        <!-- Shortcuts Sidebar -->
         <div class="sidebar">
           <div class="card p-1">
             <h4 style="display:flex; align-items:center; gap: 5px; color: #fbbf24;">★ Favorites</h4>
@@ -140,7 +145,6 @@
           </div>
         </div>
 
-        <!-- Main Form -->
         <div id="log-form-container" class="card" style="margin-bottom: 0;">
           <div class="flex-between mb-1">
             <h3 id="form-title" style="margin: 0;">Quick Log</h3>
@@ -151,9 +155,15 @@
           </div>
 
           <div class="form-grid" style="margin-top: 0;">
-            <div class="input-group full-width"><label>Food Name</label><input type="text" id="log-name"></div>
             
-            <!-- Base Serving Size with Unit Toggle (ml/g support) -->
+            <div class="input-group full-width">
+              <label>Food Name</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <button id="log-emoji-btn" class="btn-secondary" style="width: 60px; font-size: 1.2rem; padding: 0;" title="Select Emoji">🍽️</button>
+                <input type="text" id="log-name" placeholder="e.g. Chicken breast (optional for quick logs)" style="flex: 1;">
+              </div>
+            </div>
+            
             <div class="input-group">
               <label id="serving-size-label">Base Serving Size</label>
               <div style="display: flex; gap: 0.5rem;">
@@ -189,7 +199,6 @@
             <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
           </div>
 
-          <!-- Bottom Action Buttons: Save Library & Save Only / Log Food -->
           <div class="flex-between mt-2">
             <label class="custom-checkbox"><input type="checkbox" id="log-save-library"> Save to library</label>
             <div style="display: flex; gap: 0.5rem;">
@@ -207,7 +216,14 @@
       <h1>Recipe Composer</h1>
       <div class="card">
         <div class="form-grid" style="margin-top: 0;">
-          <div class="input-group full-width"><label>Recipe Name</label><input type="text" id="recipe-name" placeholder="e.g. Morning Coffee"></div>
+          <div class="input-group full-width">
+            <label>Recipe Name</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="recipe-emoji-btn" class="btn-secondary" style="width: 60px; font-size: 1.2rem; padding: 0;" title="Select Emoji">🍽️</button>
+              <input type="text" id="recipe-name" placeholder="e.g. Morning Coffee" style="flex: 1;">
+            </div>
+          </div>
+          
           <div class="input-group"><label>Serving Unit (optional)</label><input type="text" id="recipe-unit" placeholder="e.g. mug, portion"></div>
           <div class="input-group"><label>Total Weight (g)</label><input type="number" id="recipe-total-g" readonly value="0"></div>
         </div>
@@ -241,19 +257,14 @@
     <!-- WEIGHT TRACKER -->
     <section id="weight-tracker" class="page hidden">
       <h1>Weight Tracker</h1>
-      
       <div class="layout-sidebar">
-        <!-- History Sidebar -->
         <div class="sidebar">
           <div class="card p-1" style="max-height: 500px; overflow-y: auto;">
             <h4>Log History</h4>
             <div id="weight-history-list" class="list-container mt-1"></div>
           </div>
         </div>
-
-        <!-- Main Form & Chart -->
         <div class="card" style="margin-bottom: 0; align-self: flex-start; width: 100%;">
-          
           <div class="flex-between gap-1 mb-2">
             <div class="input-group">
               <label>Date</label>
@@ -265,10 +276,7 @@
             </div>
             <button id="btn-log-weight" class="btn" style="margin-top: 1.4rem;">Save Log</button>
           </div>
-
           <hr class="mt-2 mb-2" style="border:0; border-top: 1px solid var(--border);">
-
-          <!-- Advanced Filters -->
           <div class="flex-between mb-1 gap-1" style="flex-wrap: wrap;">
              <h3 style="margin: 0;">Weight Trend</h3>
              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -279,12 +287,9 @@
                 <button id="btn-clear-filter" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
              </div>
           </div>
-
-          <!-- Fixed Height Container to prevent Chart.js infinite scaling loop -->
           <div style="position: relative; height: 350px; width: 100%;">
             <canvas id="weightChart"></canvas>
           </div>
-
         </div>
       </div>
     </section>
@@ -346,6 +351,14 @@
           </div>
         </div>
         <div class="input-group mb-1">
+          <label>GitHub Models API Key (For Emoji AI AI)</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="settings-github-key" style="flex: 1;">
+            <button id="btn-save-github" class="btn">Save Key</button>
+          </div>
+        </div>
+        
+        <div class="input-group mb-1">
           <label class="custom-checkbox">
             <input type="checkbox" id="settings-include-branded">
             Include Branded Foods in USDA Search Results
@@ -363,7 +376,16 @@
 
   </main>
 
-  <!-- Weight Edit Modal -->
+  <!-- Emoji Picker Modal -->
+  <div id="emoji-picker-modal" class="modal hidden" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 400px; padding: 1.5rem;">
+      <h3 class="mb-1">Select an Emoji</h3>
+      <div id="emoji-picker-container" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+      <button id="btn-close-emoji-picker" class="btn mt-2 full-width">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Historical Weight Edit Modal -->
   <div id="edit-weight-modal" class="modal hidden">
     <div class="modal-content" style="max-width: 350px;">
       <h3>Edit Weight Log</h3>
@@ -426,9 +448,14 @@
     <div class="modal-content">
       <h2>Edit Library Item</h2>
       <div class="form-grid">
-        <div class="input-group full-width"><label>Food Name</label><input type="text" id="edit-lib-name"></div>
+        <div class="input-group full-width">
+          <label>Food Name</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="edit-lib-emoji-btn" class="btn-secondary" style="width: 60px; font-size: 1.2rem; padding: 0;" title="Select Emoji">🍽️</button>
+            <input type="text" id="edit-lib-name" style="flex: 1;">
+          </div>
+        </div>
         
-        <!-- Unit toggle in Library Edit -->
         <div class="input-group">
           <label>Base Serving Size</label>
           <div style="display: flex; gap: 0.5rem;">
@@ -470,7 +497,6 @@
     </div>
   </div>
 
-  <!-- Custom Confirmation Modal -->
   <div id="confirm-modal" class="modal hidden" style="z-index: 2100;">
     <div class="modal-content" style="max-width: 400px; padding: 1.75rem;">
       <h3 id="confirm-title" style="margin-bottom: 0.5rem;">Confirm Action</h3>
