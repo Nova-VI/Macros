@@ -112,6 +112,8 @@ h4 { font-size: 1rem; margin-bottom: 0.75rem; font-weight: 600; }
 
 .btn-secondary { background-color: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); cursor: pointer; transition: 0.2s; }
 .btn-secondary:hover { background-color: var(--border); }
+.btn-secondary.active { background-color: var(--primary); border-color: var(--primary); color: white; }
+.btn-secondary.active:hover { background-color: var(--primary-hover); }
 
 .btn-danger { background-color: var(--danger); color: white; border: none; cursor: pointer; }
 .btn-danger:hover { background-color: var(--danger-hover); }
@@ -282,15 +284,33 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* Modals */
+@keyframes modalOverlayFadeIn {
+  from { background-color: rgba(0, 0, 0, 0); }
+  to { background-color: rgba(0, 0, 0, 0.8); }
+}
+@keyframes modalContentEntrance {
+  from { opacity: 0; transform: scale(0.95) translateY(15px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .modal {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 .modal.hidden { display: none; }
+
+.modal:not(.hidden) {
+  animation: modalOverlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .modal-content {
   background-color: var(--surface-color); padding: 2rem; border-radius: var(--radius-lg);
   max-width: 500px; width: 95%; border: 1px solid var(--border);
   max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.modal:not(.hidden) .modal-content {
+  animation: modalContentEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Progress Bars */

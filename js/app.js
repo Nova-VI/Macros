@@ -143,4 +143,57 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (targetId === 'settings') { settings.loadProfile(); }
     });
   });
+
+  // --- GLOBAL MODAL OVERLAY CLICK AND DIRTY TRACKING ---
+  function hasModalChanges(modalEl) {
+    const inputs = modalEl.querySelectorAll('input, select, textarea');
+    const initial = modalEl._initialValuesSnapshot || [];
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+      const currentVal = (input.type === 'checkbox' || input.type === 'radio') ? input.checked : input.value;
+      if (currentVal !== initial[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const modalObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'class') {
+        const target = mutation.target;
+        const isHidden = target.classList.contains('hidden');
+        if (!isHidden) {
+          // Modal opened: snapshot input values
+          const inputs = target.querySelectorAll('input, select, textarea');
+          target._initialValuesSnapshot = Array.from(inputs).map(input => {
+            return (input.type === 'checkbox' || input.type === 'radio') ? input.checked : input.value;
+          });
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.modal').forEach(modalEl => {
+    modalObserver.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('modal') && !e.target.classList.contains('hidden')) {
+      const modalEl = e.target;
+      if (modalEl.id === 'confirm-modal') return;
+
+      if (hasModalChanges(modalEl)) {
+        const confirmed = await window.customConfirm("Unsaved Changes", "You have unsaved changes. Are you sure you want to discard them?", true);
+        if (!confirmed) return;
+      }
+
+      const cancelBtn = modalEl.querySelector('#btn-close-emoji-picker, #btn-cancel-weight-edit, #btn-cancel-custom-date, #btn-cancel-recipe-weight, #btn-close-nutrition-modal, #btn-cancel-lib-edit, #btn-confirm-cancel');
+      if (cancelBtn) {
+        cancelBtn.click();
+      } else {
+        modalEl.classList.add('hidden');
+      }
+    }
+  });
 });

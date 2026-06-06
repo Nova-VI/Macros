@@ -8,9 +8,15 @@ export function initWeightTracker() {
   const ctx = document.getElementById('weightChart').getContext('2d');
   
   // Date Filters
+  const btnFilterWeek = document.getElementById('btn-filter-week');
+  const btnFilterMonth = document.getElementById('btn-filter-month');
+  const btnFilterAll = document.getElementById('btn-filter-all');
+  const btnFilterCustom = document.getElementById('btn-filter-custom');
+  const customDateModal = document.getElementById('custom-date-modal');
+  const btnCancelCustomDate = document.getElementById('btn-cancel-custom-date');
+  const btnApplyCustomDate = document.getElementById('btn-apply-custom-date');
   const filterStartDate = document.getElementById('filter-start-date');
   const filterEndDate = document.getElementById('filter-end-date');
-  const btnClearFilter = document.getElementById('btn-clear-filter');
   
   // Edit Modal
   const modal = document.getElementById('edit-weight-modal');
@@ -20,6 +26,7 @@ export function initWeightTracker() {
   const btnSaveEdit = document.getElementById('btn-save-weight-edit');
 
   let chartInstance = null;
+  let activePreset = 'all'; // 'week', 'month', 'all', 'custom'
 
   function setDefaultDate() {
     const now = new Date();
@@ -27,56 +34,138 @@ export function initWeightTracker() {
     logDateInput.value = localTodayDate;
   }
 
-  async function renderPage() {
-    // 1. Fetch all weights ordered descending (most recent first)
-    let weightsDesc = await db.weight_logs.orderBy('date').reverse().toArray();
-    
-    // 2. Apply Date Filters if active
-    const start = filterStartDate.value;
-    const end = filterEndDate.value;
-    
-    if (start) {
-      weightsDesc = weightsDesc.filter(w => w.date >= start);
+  function getFilterBounds(allWeightsAsc) {
+    const now = new Date();
+    const toLocalISOString = (d) => {
+      return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    };
+    const todayStr = toLocalISOString(now);
+
+    if (activePreset === 'week') {
+      const start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+      return { start: toLocalISOString(start), end: todayStr };
     }
-    if (end) {
-      weightsDesc = weightsDesc.filter(w => w.date <= end);
+    if (activePreset === 'month') {
+      const start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+      return { start: toLocalISOString(start), end: todayStr };
+    }
+    if (activePreset === 'custom') {
+      let start = filterStartDate.value;
+      let end = filterEndDate.value;
+      if (!start && allWeightsAsc.length > 0) start = allWeightsAsc[0].date;
+      if (!end && allWeightsAsc.length > 0) end = allWeightsAsc[allWeightsAsc.length - 1].date;
+      return { start: start || todayStr, end: end || todayStr };
     }
 
-    renderChart(weightsDesc);
-    renderHistory(weightsDesc);
+    // Default 'all': earliest log to latest log (or today if empty)
+    const start = allWeightsAsc.length > 0 ? allWeightsAsc[0].date : todayStr;
+    const end = allWeightsAsc.length > 0 ? allWeightsAsc[allWeightsAsc.length - 1].date : todayStr;
+    return { start, end };
   }
 
-  function renderChart(weightsDesc) {
-    // Reverse the filtered array so the graph renders chronologically (Left to Right)
-    const weights = [...weightsDesc].reverse(); 
-    const labels = weights.map(w => {
-      const parts = w.date.split('-');
-      return `${parts[1]}/${parts[2]}`; // MM/DD formatting
-    }); 
-    const data = weights.map(w => w.weight_kg);
+  async function renderPage() {
+    const allWeightsAsc = await db.weight_logs.orderBy('date').toArray();
+    const { start: filterStart, end: filterEnd } = getFilterBounds(allWeightsAsc);
 
-    if (chartInstance) chartInstance.destroy();
+    // Sidebar history shows strictly within [filterStart, filterEnd]
+    const historyLogs = allWeightsAsc
+      .filter(w => w.date >= filterStart && w.date <= filterEnd)
+      .reverse();
 
-    chartInstance = new window.Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Weight (kg)', data: data, borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true,
-          tension: 0.3, pointBackgroundColor: '#10b981'
-        }]
-      },
-      options: {
-        responsive: true, 
-        maintainAspectRatio: false, // Prevents resizing bugs alongside the fixed height parent
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
-          y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
-        }
+    // Find nearest off-screen logs to draw connecting line
+    let preLog = null;
+    let postLog = null;
+
+    for (let i = 0; i < allWeightsAsc.length; i++) {
+      const log = allWeightsAsc[i];
+      if (log.date < filterStart) {
+        preLog = log;
       }
-    });
+      if (log.date > filterEnd && !postLog) {
+        postLog = log;
+      }
+    }
+
+    const chartLogs = allWeightsAsc.filter(w => w.date >= filterStart && w.date <= filterEnd);
+
+    renderChart(chartLogs, preLog, postLog, filterStart, filterEnd);
+    renderHistory(historyLogs);
+  }
+
+  function getDatesInRange(startDateStr, endDateStr) {
+    const dates = [];
+    const start = new Date(startDateStr + 'T00:00:00');
+    const end = new Date(endDateStr + 'T00:00:00');
+    let current = new Date(start);
+    while (current <= end) {
+      const yyyy = current.getFullYear();
+      const mm = String(current.getMonth() + 1).padStart(2, '0');
+      const dd = String(current.getDate()).padStart(2, '0');
+      dates.push(`${yyyy}-${mm}-${dd}`);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  }
+
+  function renderChart(chartLogs, preLog, postLog, filterStart, filterEnd) {
+    let labels = [];
+    let data = [];
+
+    const chartMin = preLog ? preLog.date : filterStart;
+    const chartMax = postLog ? postLog.date : filterEnd;
+
+    if (chartMin && chartMax && chartMin <= chartMax) {
+      const allDates = getDatesInRange(chartMin, chartMax);
+
+      const weightMap = new Map();
+      if (preLog) weightMap.set(preLog.date, preLog.weight_kg);
+      chartLogs.forEach(w => weightMap.set(w.date, w.weight_kg));
+      if (postLog) weightMap.set(postLog.date, postLog.weight_kg);
+
+      labels = allDates.map(dStr => {
+        const parts = dStr.split('-');
+        return `${parts[1]}/${parts[2]}`; // MM/DD
+      });
+
+      data = allDates.map(dStr => weightMap.has(dStr) ? weightMap.get(dStr) : null);
+
+      const minIndex = allDates.indexOf(filterStart);
+      const maxIndex = allDates.indexOf(filterEnd);
+
+      const xMin = minIndex !== -1 ? minIndex : undefined;
+      const xMax = maxIndex !== -1 ? maxIndex : undefined;
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new window.Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Weight (kg)', data: data, borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true,
+            tension: 0.3, pointBackgroundColor: '#10b981',
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { 
+              min: xMin,
+              max: xMax,
+              ticks: { color: '#9ca3af' }, 
+              grid: { color: '#374151' } 
+            },
+            y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+          }
+        }
+      });
+    } else {
+      if (chartInstance) chartInstance.destroy();
+    }
   }
 
   function renderHistory(weightsDesc) {
@@ -149,12 +238,43 @@ export function initWeightTracker() {
     renderPage();
   });
 
-  // Filter Event Listeners
-  filterStartDate.addEventListener('change', renderPage);
-  filterEndDate.addEventListener('change', renderPage);
-  btnClearFilter.addEventListener('click', () => {
-    filterStartDate.value = '';
-    filterEndDate.value = '';
+  function updatePresetButtons(activeBtn) {
+    [btnFilterWeek, btnFilterMonth, btnFilterAll, btnFilterCustom].forEach(btn => {
+      btn.classList.remove('active');
+    });
+    activeBtn.classList.add('active');
+  }
+
+  btnFilterWeek.addEventListener('click', () => {
+    activePreset = 'week';
+    updatePresetButtons(btnFilterWeek);
+    renderPage();
+  });
+
+  btnFilterMonth.addEventListener('click', () => {
+    activePreset = 'month';
+    updatePresetButtons(btnFilterMonth);
+    renderPage();
+  });
+
+  btnFilterAll.addEventListener('click', () => {
+    activePreset = 'all';
+    updatePresetButtons(btnFilterAll);
+    renderPage();
+  });
+
+  btnFilterCustom.addEventListener('click', () => {
+    customDateModal.classList.remove('hidden');
+  });
+
+  btnCancelCustomDate.addEventListener('click', () => {
+    customDateModal.classList.add('hidden');
+  });
+
+  btnApplyCustomDate.addEventListener('click', () => {
+    activePreset = 'custom';
+    updatePresetButtons(btnFilterCustom);
+    customDateModal.classList.add('hidden');
     renderPage();
   });
 

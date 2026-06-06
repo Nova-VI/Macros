@@ -280,10 +280,10 @@
              <h3 style="margin: 0;">Weight Trend</h3>
              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <span class="text-sm text-muted">Filter:</span>
-                <input type="date" id="filter-start-date" class="input-inline">
-                <span class="text-sm text-muted">to</span>
-                <input type="date" id="filter-end-date" class="input-inline">
-                <button id="btn-clear-filter" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
+                <button id="btn-filter-week" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Last Week</button>
+                <button id="btn-filter-month" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Last Month</button>
+                <button id="btn-filter-all" class="btn-secondary active" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
+                <button id="btn-filter-custom" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Custom Date</button>
              </div>
           </div>
           <div style="position: relative; height: 350px; width: 100%;">
@@ -427,6 +427,26 @@
       <div class="flex-between mt-2 pt-1" style="border-top: 1px solid var(--border);">
         <button id="btn-cancel-weight-edit" class="btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
         <button id="btn-save-weight-edit" class="btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Date Filter Modal -->
+  <div id="custom-date-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 350px;">
+      <h3>Select Date Range</h3>
+      <p class="text-muted text-sm mb-2">Choose the start and end dates for the chart trend.</p>
+      <div class="input-group mt-1">
+        <label>Start Date</label>
+        <input type="date" id="filter-start-date" style="width: 100%;">
+      </div>
+      <div class="input-group mt-1">
+        <label>End Date</label>
+        <input type="date" id="filter-end-date" style="width: 100%;">
+      </div>
+      <div class="flex-between mt-2 pt-1" style="border-top: 1px solid var(--border); gap: 1rem;">
+        <button id="btn-cancel-custom-date" class="btn-secondary" style="padding: 0.5rem 1.25rem; flex: 1;">Cancel</button>
+        <button id="btn-apply-custom-date" class="btn" style="padding: 0.5rem 1.25rem; flex: 1;">Apply</button>
       </div>
     </div>
   </div>
