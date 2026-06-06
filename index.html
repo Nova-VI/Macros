@@ -47,6 +47,7 @@
       <button class="nav-btn" data-target="log-food">Log Food</button>
       <button class="nav-btn" data-target="recipe-composer">Recipe</button>
       <button class="nav-btn" data-target="weight-tracker">Weight</button>
+      <button class="nav-btn" data-target="stats">Stats</button>
       <button class="nav-btn" data-target="library">Library</button>
       <button class="nav-btn" data-target="settings">Settings</button>
     </nav>
@@ -290,6 +291,68 @@
             <canvas id="weightChart"></canvas>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section id="stats" class="page hidden">
+      <div class="flex-between mb-1" style="flex-wrap: wrap; gap: 1rem;">
+        <h1 style="margin-bottom: 0;">Stats & Insights</h1>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <span class="text-sm text-muted">Period:</span>
+          <button class="btn-secondary stats-filter-btn" data-range="7" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">7 Days</button>
+          <button class="btn-secondary stats-filter-btn active" data-range="30" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">30 Days</button>
+          <button class="btn-secondary stats-filter-btn" data-range="90" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">90 Days</button>
+          <button class="btn-secondary stats-filter-btn" data-range="all" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div id="stats-summary-cards" class="stats-cards-grid"></div>
+
+      <!-- Charts Row -->
+      <div class="stats-charts-row">
+        <div class="card stats-chart-card" style="flex: 2; min-width: 0;">
+          <div class="flex-between mb-05" style="align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="margin: 0;">Daily Trend</h3>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="text-sm text-muted">Show:</span>
+              <select id="stats-trend-metric-select" class="input-inline" style="background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); padding: 0.25rem 0.5rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; outline: none; font-size: 0.85rem;">
+                <option value="calories">Calories</option>
+                <option value="protein">Protein</option>
+                <option value="carbs">Carbs</option>
+                <option value="fat">Fats</option>
+              </select>
+            </div>
+          </div>
+          <p id="stats-trend-description" class="text-muted text-sm mb-1">Your daily calorie intake vs. your target over the selected period.</p>
+          <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="stats-calorie-chart"></canvas>
+          </div>
+        </div>
+        <div class="card stats-chart-card" style="flex: 1; min-width: 260px;">
+          <h3 style="margin-bottom: 0.5rem;">Macro Breakdown</h3>
+          <p class="text-muted text-sm mb-1">Average macronutrient distribution.</p>
+          <div style="position: relative; height: 180px; width: 100%; margin: 0 auto;">
+            <canvas id="stats-macro-chart"></canvas>
+          </div>
+          <div id="stats-macro-legend" class="stats-macro-legend mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Micronutrients (expandable) -->
+      <div class="card mt-1">
+        <button id="stats-micro-toggle" class="btn-link" style="width: 100%; text-align: left;">Show Micronutrients ▾</button>
+        <div id="stats-micro-panel" class="hidden mt-1">
+          <p class="text-muted text-sm mb-1">Average daily micronutrient intake for the selected period.</p>
+          <div id="stats-micro-details" class="stats-micro-grid"></div>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="card mt-1">
+        <h3 style="margin-bottom: 0.5rem;">💡 Insights</h3>
+        <div id="stats-insights"></div>
       </div>
     </section>
 
