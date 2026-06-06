@@ -20,7 +20,10 @@ export function initStats() {
   function subtractDays(dateStr, days) {
     const d = new Date(dateStr + 'T00:00:00');
     d.setDate(d.getDate() - days);
-    return d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
   }
 
   function getDatesInRange(startStr, endStr) {
@@ -51,7 +54,7 @@ export function initStats() {
     if (currentRange === 'all') {
       startDate = null; // no lower bound
     } else {
-      startDate = subtractDays(today, parseInt(currentRange));
+      startDate = subtractDays(today, parseInt(currentRange) - 1);
     }
 
     const profile = await db.profile.get(1);
