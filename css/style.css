@@ -109,7 +109,7 @@ h4 { font-size: 1rem; margin-bottom: 0.75rem; font-weight: 600; }
 }
 .btn:hover { background-color: var(--primary-hover); }
 
-.btn-secondary { background-color: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); cursor: pointer; transition: 0.2s; }
+.btn-secondary { background-color: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); cursor: pointer; transition: 0.2s; border-radius: var(--radius); }
 .btn-secondary:hover { background-color: var(--border); }
 .btn-secondary.active { background-color: var(--primary); border-color: var(--primary); color: white; }
 .btn-secondary.active:hover { background-color: var(--primary-hover); }
@@ -151,7 +151,7 @@ h4 { font-size: 1rem; margin-bottom: 0.75rem; font-weight: 600; }
 }
 .custom-checkbox input[type="checkbox"] {
   appearance: none; width: 18px; height: 18px; border: 2px solid var(--border);
-  border-radius: 4px; background-color: var(--bg-color); cursor: pointer; position: relative;
+  border-radius: calc(var(--radius) / 2); background-color: var(--bg-color); cursor: pointer; position: relative;
 }
 .custom-checkbox input[type="checkbox"]:checked {
   background-color: var(--primary); border-color: var(--primary);
@@ -272,7 +272,7 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: 1rem; font-weight: 600; min-width: 150px; text-align: center; position: relative;
 }
 .date-display span {
-  display: block; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; transition: 0.2s;
+  display: block; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: calc(var(--radius) / 2); transition: 0.2s;
 }
 .date-display span:hover { background-color: var(--surface-hover); color: var(--primary); }
 .date-display input[type="date"] {
@@ -294,13 +294,17 @@ input[type="number"]::-webkit-outer-spin-button {
 .dropdown-item:last-child { border-bottom: none; }
 .dropdown-item:hover { background-color: var(--surface-hover); }
 .dropdown-item.kbd-active { background-color: var(--surface-hover) !important; border-left: 3px solid var(--primary); padding-left: calc(1rem - 3px); }
+/* API results are visually dimmer to distinguish from local library matches */
+.dropdown-item--api { opacity: 0.82; }
+.dropdown-item--api:hover { opacity: 1; }
 
 /* Badges */
 .badge {
-  font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px;
+  font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: calc(var(--radius) / 2);
   background-color: var(--border); color: var(--text-main); font-weight: 600; text-transform: uppercase;
 }
 .badge.usda { background-color: #2563eb; color: white; }
+.badge.lib-usda { background-color: #0d9488; color: white; }  /* teal — library item originally from USDA */
 .badge.history { background-color: var(--primary); color: white; }
 .badge.composite { background-color: #9333ea; color: white; }
 
@@ -364,7 +368,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* Progress Bars */
 .progress-bg {
-  background-color: var(--bg-color); height: 8px; border-radius: 4px; overflow: hidden;
+  background-color: var(--bg-color); height: 8px; border-radius: calc(var(--radius) / 2); overflow: hidden;
   border: 1px solid var(--border); margin-top: 0.4rem;
 }
 .progress-fill { background-color: var(--primary); height: 100%; width: 0%; transition: width 0.5s ease; }
@@ -402,12 +406,13 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 .shortcut-card {
   background: var(--surface-color); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 0.4rem 0.6rem; cursor: pointer; transition: all 0.2s;
+  padding: 0.4rem 0.6rem; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   display: flex;
   align-items: center;
   min-height: 36px;
 }
-.shortcut-card:hover { border-color: var(--primary); background: var(--surface-hover); }
+/* Use box-shadow lift instead of transform to avoid escaping the card container */
+.shortcut-card:hover { border-color: var(--primary); background: var(--surface-hover); box-shadow: 0 0 0 1px var(--primary); }
 .shortcut-card .title { font-size: 0.85rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Utilities */
@@ -510,7 +515,7 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  border-radius: calc(var(--radius) / 2);
 }
 .stats-status--on-track { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .stats-status--warn { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }

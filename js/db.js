@@ -46,6 +46,18 @@ export function setGithubApiKey(key) {
   localStorage.setItem('github_api_key', key.trim());
 }
 
+export function getTheme() {
+  let theme = localStorage.getItem('app_theme') || 'default';
+  if (theme === 'riot') {
+    theme = 'modern';
+    setTheme('modern');
+  }
+  return theme;
+}
+export function setTheme(theme) {
+  localStorage.setItem('app_theme', theme);
+}
+
 export async function exportDatabaseJSON() {
   const data = {
     foods: await db.foods.toArray(),

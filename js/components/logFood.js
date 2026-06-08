@@ -219,14 +219,22 @@ export function initLogFood(dashboardRef) {
     dropdown.innerHTML = ''; activeDropdownIndex = -1; 
     history.forEach(food => {
       const div = document.createElement('div'); div.className = 'dropdown-item';
-      let badge = food.source === 'composite' ? 'composite' : 'history';
+      let badge, badgeLabel;
+      if (food.source === 'composite') {
+        badge = 'composite'; badgeLabel = 'composite';
+      } else if (food.source === 'usda' || food.source === 'usda_modified') {
+        // Library item originally from USDA — distinct teal color
+        badge = 'lib-usda'; badgeLabel = 'library';
+      } else {
+        badge = 'history'; badgeLabel = 'library';
+      }
       const emj = food.emoji || '🍽️';
-      div.innerHTML = `<span>${emj} ${food.name} ${food.serving_name ? `(${food.serving_name})` : ''}</span> <span class="badge ${badge}">${food.source}</span>`;
+      div.innerHTML = `<span>${emj} ${food.name} ${food.serving_name ? `(${food.serving_name})` : ''}</span> <span class="badge ${badge}">${badgeLabel}</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectHistoryFood(food); };
       dropdown.appendChild(div);
     });
     usda.forEach(food => {
-      const div = document.createElement('div'); div.className = 'dropdown-item';
+      const div = document.createElement('div'); div.className = 'dropdown-item dropdown-item--api';
       div.innerHTML = `<span>🍽️ ${food.description}</span> <span class="badge usda">USDA</span>`;
       div.onclick = (e) => { e.stopPropagation(); selectUSDAFood(food.fdcId); };
       dropdown.appendChild(div);

@@ -4,7 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Macro Tracker</title>
+  <script>
+    (function() {
+      let theme = localStorage.getItem('app_theme') || 'default';
+      if (theme === 'riot') {
+        theme = 'modern';
+        localStorage.setItem('app_theme', 'modern');
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme-modern.css">
   <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -34,7 +45,7 @@
     }
     .emoji-btn-item {
       background: transparent; border: none; font-size: 1.4rem; cursor: pointer; 
-      padding: 0.25rem; border-radius: 6px; transition: background 0.2s; text-align: center;
+      padding: 0.25rem; border-radius: var(--radius); transition: background 0.2s; text-align: center;
     }
     .emoji-btn-item:hover { background: var(--surface-hover); }
   </style>
@@ -74,7 +85,7 @@
       <div class="card mb-2">
         <div class="flex-between mb-1">
           <h3 style="margin: 0;">Daily Overview</h3>
-          <button id="btn-toggle-view" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Show Remaining</button>
+          <button id="btn-toggle-view" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius);">Show Remaining</button>
         </div>
         
         <div class="macro-bar-container mb-2">
@@ -267,7 +278,7 @@
         <div class="mt-2 panel-transparent">
           <div class="flex-between mb-1">
             <h4 style="margin: 0;">Recipe Total Nutrition</h4>
-            <button id="btn-view-recipe-micros" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px;">View Full Facts</button>
+            <button id="btn-view-recipe-micros" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: var(--radius);">View Full Facts</button>
           </div>
           <div class="macro-stats">
             <div class="stat-col"><span class="stat-label">Calories</span><span class="stat-value cals" id="recipe-cal">0</span></div>
@@ -308,10 +319,10 @@
              <h3 style="margin: 0;">Weight Trend</h3>
              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <span class="text-sm text-muted">Filter:</span>
-                <button id="btn-filter-week" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Last Week</button>
-                <button id="btn-filter-month" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Last Month</button>
-                <button id="btn-filter-all" class="btn-secondary active" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
-                <button id="btn-filter-custom" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">Custom Date</button>
+                <button id="btn-filter-week" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius);">Last Week</button>
+                <button id="btn-filter-month" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius);">Last Month</button>
+                <button id="btn-filter-all" class="btn-secondary active" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius);">All Time</button>
+                <button id="btn-filter-custom" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius);">Custom Date</button>
              </div>
           </div>
           <div style="position: relative; height: 350px; width: 100%;">
@@ -327,10 +338,10 @@
         <h1 style="margin-bottom: 0;">Stats & Insights</h1>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
           <span class="text-sm text-muted">Period:</span>
-          <button class="btn-secondary stats-filter-btn" data-range="7" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">7 Days</button>
-          <button class="btn-secondary stats-filter-btn active" data-range="30" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">30 Days</button>
-          <button class="btn-secondary stats-filter-btn" data-range="90" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">90 Days</button>
-          <button class="btn-secondary stats-filter-btn" data-range="all" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 4px;">All Time</button>
+          <button class="btn-secondary stats-filter-btn" data-range="7" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: var(--radius);">7 Days</button>
+          <button class="btn-secondary stats-filter-btn active" data-range="30" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: var(--radius);">30 Days</button>
+          <button class="btn-secondary stats-filter-btn" data-range="90" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: var(--radius);">90 Days</button>
+          <button class="btn-secondary stats-filter-btn" data-range="all" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: var(--radius);">All Time</button>
         </div>
       </div>
 
@@ -394,6 +405,19 @@
     <section id="settings" class="page hidden">
       <h1>Settings & Profile</h1>
       
+      <div class="card mb-1">
+        <h3>Appearance</h3>
+        <div class="form-grid mt-1">
+          <div class="input-group full-width">
+            <label>Theme Selection</label>
+            <select id="settings-theme">
+              <option value="default">Default Theme</option>
+              <option value="modern">Modern Glass Theme</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <h3>Target Goals Calculator</h3>
         <div class="form-grid mt-1">
@@ -451,7 +475,7 @@
             <div class="input-group"><label>Target Carbs (g)</label><input type="number" id="prof-carb"></div>
             <div class="input-group"><label>Target Fat (g)</label><input type="number" id="prof-fat"></div>
           </div>
-          <div id="extreme-diet-warning" class="hidden text-sm mt-1" style="color: var(--warning); border-left: 3px solid var(--warning); padding-left: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 0 4px 4px 0; padding: 0.5rem 1rem;">
+          <div id="extreme-diet-warning" class="hidden text-sm mt-1" style="color: var(--warning); border-left: 3px solid var(--warning); padding-left: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.5rem 1rem;">
             ⚠ Warning: Your target is below the recommended safety minimum.
           </div>
         </div>

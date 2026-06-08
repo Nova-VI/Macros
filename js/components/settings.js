@@ -1,9 +1,16 @@
-import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded, getGithubApiKey, setGithubApiKey } from '../db.js';
+import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded, getGithubApiKey, setGithubApiKey, getTheme, setTheme } from '../db.js';
 
 export function initSettings() {
   const calcMethodSelect = document.getElementById('goal-calc-method');
   const smartCalcPanel = document.getElementById('smart-calc-panel');
   const warningEl = document.getElementById('extreme-diet-warning');
+  const themeSelect = document.getElementById('settings-theme');
+
+  themeSelect.addEventListener('change', (e) => {
+    const newTheme = e.target.value;
+    setTheme(newTheme);
+    document.documentElement.dataset.theme = newTheme;
+  });
 
   const calcInputs = {
     age: document.getElementById('calc-age'),
@@ -90,6 +97,8 @@ export function initSettings() {
     
     const ghKey = getGithubApiKey();
     if (ghKey) document.getElementById('settings-github-key').value = ghKey;
+
+    themeSelect.value = getTheme();
 
     performLiveCalculations();
   }

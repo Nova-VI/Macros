@@ -66,9 +66,9 @@ export function initLibrary() {
             <button class="btn-favorite ${food.is_favorite ? 'active' : ''}" data-id="${food.id}" title="Toggle Favorite">★</button>
             ${emj} ${food.name} <span class="badge ${badgeClass}">${food.source}</span>
           </div>
-          <div class="list-item-actions">
-            <button class="btn-secondary edit-food-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" data-id="${food.id}" data-source="${food.source}">✎ Edit</button>
-            <button class="btn-ghost-danger delete-food-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" data-id="${food.id}">✕</button>
+          <div class="list-item-actions" style="display: flex; gap: 0.4rem;">
+            <button class="btn-icon edit-food-btn" title="Edit" data-id="${food.id}" data-source="${food.source}">✎</button>
+            <button class="btn-icon delete-food-btn" title="Delete" style="color: var(--danger);" data-id="${food.id}">✕</button>
           </div>
         </div>
         <div class="macro-stats mt-05">
@@ -115,6 +115,12 @@ export function initLibrary() {
     });
   }
 
+  // Cleans up floating-point artifacts (e.g. 28.000000000000004 → 28)
+  function roundVal(v, decimals = 4) {
+    if (v === undefined || v === null || isNaN(v)) return 0;
+    return parseFloat(Number(v).toFixed(decimals));
+  }
+
   async function openEditModal(id) {
     const food = await db.foods.get(id);
     if (!food) return;
@@ -122,27 +128,27 @@ export function initLibrary() {
     activeEditId = id;
     editEls.emojiBtn.innerText = food.emoji || '🍽️';
     editEls.name.value = food.name;
-    editEls.serving_g.value = food.serving_size_g;
+    editEls.serving_g.value = roundVal(food.serving_size_g, 2);
     editEls.base_unit.value = food.base_unit || 'g'; 
     editEls.serving_unit.value = food.serving_name || '';
-    editEls.protein.value = food.macros.protein_g;
-    editEls.carbs.value = food.macros.carbs_g;
-    editEls.fat.value = food.macros.fat_g;
-    editEls.calories.value = food.macros.calories;
-    editEls.density.value = food.density || 1.0;
+    editEls.protein.value = roundVal(food.macros.protein_g);
+    editEls.carbs.value = roundVal(food.macros.carbs_g);
+    editEls.fat.value = roundVal(food.macros.fat_g);
+    editEls.calories.value = roundVal(food.macros.calories, 1);
+    editEls.density.value = roundVal(food.density || 1.0, 3);
 
     const micros = food.micros || {};
-    editEls.fiber.value = micros.fiber_g || 0;
-    editEls.sugar.value = micros.sugar_g || 0;
-    editEls.sodium.value = micros.sodium_mg || 0;
-    editEls.sat_fat.value = micros.saturated_fat_g || 0;
-    editEls.chol.value = micros.cholesterol_mg || 0;
-    editEls.potassium.value = micros.potassium_mg || 0;
-    editEls.vit_a.value = micros.vitamin_a_ug || 0;
-    editEls.vit_c.value = micros.vitamin_c_mg || 0;
-    editEls.vit_d.value = micros.vitamin_d_ug || 0;
-    editEls.calcium.value = micros.calcium_mg || 0;
-    editEls.iron.value = micros.iron_mg || 0;
+    editEls.fiber.value    = roundVal(micros.fiber_g);
+    editEls.sugar.value    = roundVal(micros.sugar_g);
+    editEls.sodium.value   = roundVal(micros.sodium_mg, 1);
+    editEls.sat_fat.value  = roundVal(micros.saturated_fat_g);
+    editEls.chol.value     = roundVal(micros.cholesterol_mg, 1);
+    editEls.potassium.value = roundVal(micros.potassium_mg, 1);
+    editEls.vit_a.value    = roundVal(micros.vitamin_a_ug, 1);
+    editEls.vit_c.value    = roundVal(micros.vitamin_c_mg);
+    editEls.vit_d.value    = roundVal(micros.vitamin_d_ug);
+    editEls.calcium.value  = roundVal(micros.calcium_mg);
+    editEls.iron.value     = roundVal(micros.iron_mg);
 
     editMicrosPanel.classList.add('hidden');
     toggleEditMicrosBtn.innerText = "Show Advanced Micronutrients ▾";
