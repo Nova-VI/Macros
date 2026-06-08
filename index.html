@@ -521,13 +521,15 @@
         <h3>Data Management</h3>
         <div class="input-group mb-1 mt-1">
           <label>USDA API Key</label>
+          <div class="text-sm text-muted mb-05" style="margin-bottom: 0.5rem;">Get your free API key by registering at the <a href="https://fdc.nal.usda.gov/api-key-signup.html" target="_blank" style="color: var(--primary); text-decoration: none;">USDA FoodData Central signup page</a>.</div>
           <div style="display: flex; gap: 0.5rem;">
             <input type="text" id="settings-api-key" style="flex: 1;">
             <button id="btn-save-settings" class="btn">Save Key</button>
           </div>
         </div>
         <div class="input-group mb-1">
-          <label>GitHub Models API Key (For Emoji AI AI)</label>
+          <label>GitHub Models API Key (For Automatic Emojis)</label>
+          <div class="text-sm text-muted mb-05" style="margin-bottom: 0.5rem;">Create a <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--primary); text-decoration: none;">Personal Access Token</a> on GitHub to enable free AI-powered emoji generation. No specific scopes are required.</div>
           <div style="display: flex; gap: 0.5rem;">
             <input type="text" id="settings-github-key" style="flex: 1;">
             <button id="btn-save-github" class="btn">Save Key</button>
