@@ -321,10 +321,12 @@
     <section id="weight-tracker" class="page hidden">
       <h1>Weight Tracker</h1>
       <div class="layout-sidebar">
-        <div class="sidebar">
-          <div class="card p-1" style="overflow-y: auto;">
-            <h4>Log History</h4>
-            <div id="weight-history-list" class="list-container mt-1"></div>
+        <div class="sidebar" style="position: relative;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex;">
+            <div class="card p-1" style="flex: 1; margin-bottom: 0; display: flex; flex-direction: column; min-height: 0;">
+              <h4 style="flex-shrink: 0;">Log History</h4>
+              <div id="weight-history-list" class="list-container mt-1" style="overflow-y: auto; flex: 1; min-height: 0;"></div>
+            </div>
           </div>
         </div>
         <div class="card" style="margin-bottom: 0; width: 100%;">
