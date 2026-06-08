@@ -95,7 +95,7 @@ export function initLogFood(dashboardRef) {
     allFoods.forEach(food => { food.logCount = counts[food.id] || 0; });
 
     const favorites = allFoods.filter(f => f.is_favorite).sort((a, b) => b.logCount - a.logCount);
-    const frequents = allFoods.filter(f => !f.is_favorite && f.logCount > 0).sort((a, b) => b.logCount - a.logCount).slice(0, 10);
+    const frequents = allFoods.filter(f => !f.is_favorite && f.logCount > 0).sort((a, b) => b.logCount - a.logCount).slice(0, 8);
 
     const renderGrid = (containerId, items) => {
       const container = document.getElementById(containerId);
@@ -105,12 +105,9 @@ export function initLogFood(dashboardRef) {
       items.forEach(food => {
         const card = document.createElement('div');
         card.className = 'shortcut-card';
-        const unit = food.base_unit || 'g'; 
         const emj = food.emoji || '🍽️';
         card.innerHTML = `
           <div class="title" title="${food.name}">${emj} ${food.name}</div>
-          <div class="cal">${Math.round(food.macros.calories)} kcal</div>
-          <div class="meta">${food.serving_size_g}${unit} ${food.serving_name || ''}</div>
         `;
         card.onclick = () => { selectHistoryFood(food); window.scrollTo({top:0, behavior:'smooth'}); };
         container.appendChild(card);
@@ -334,24 +331,56 @@ export function initLogFood(dashboardRef) {
   }
 
   function scaleNutrients(mult) {
-    els.protein.value = (currentFood.macros.protein_g * mult).toFixed(1);
-    els.carbs.value = (currentFood.macros.carbs_g * mult).toFixed(1);
-    els.fat.value = (currentFood.macros.fat_g * mult).toFixed(1);
+    const proteinVal = currentFood.macros.protein_g * mult;
+    els.protein.value = proteinVal > 0 ? proteinVal.toFixed(1) : '';
     
-    if (!manualCalories) els.calories.value = Math.round((currentFood.macros.protein_g * 4 * mult) + (currentFood.macros.carbs_g * 4 * mult) + (currentFood.macros.fat_g * 9 * mult));
+    const carbsVal = currentFood.macros.carbs_g * mult;
+    els.carbs.value = carbsVal > 0 ? carbsVal.toFixed(1) : '';
+    
+    const fatVal = currentFood.macros.fat_g * mult;
+    els.fat.value = fatVal > 0 ? fatVal.toFixed(1) : '';
+    
+    if (!manualCalories) {
+      const calcCals = Math.round((currentFood.macros.protein_g * 4 * mult) + (currentFood.macros.carbs_g * 4 * mult) + (currentFood.macros.fat_g * 9 * mult));
+      els.calories.value = calcCals > 0 ? calcCals : '';
+    } else {
+      const manualCalVal = currentFood.macros.calories * mult;
+      els.calories.value = manualCalVal > 0 ? Math.round(manualCalVal) : '';
+    }
 
     const micros = currentFood.micros || {};
-    els.fiber.value = ((micros.fiber_g || 0) * mult).toFixed(1);
-    els.sugar.value = ((micros.sugar_g || 0) * mult).toFixed(1);
-    els.sodium.value = Math.round((micros.sodium_mg || 0) * mult);
-    els.sat_fat.value = ((micros.saturated_fat_g || 0) * mult).toFixed(1);
-    els.cholesterol.value = Math.round((micros.cholesterol_mg || 0) * mult);
-    els.potassium.value = Math.round((micros.potassium_mg || 0) * mult);
-    els.vit_a.value = Math.round((micros.vitamin_a_ug || 0) * mult);
-    els.vit_c.value = ((micros.vitamin_c_mg || 0) * mult).toFixed(1);
-    els.vit_d.value = ((micros.vitamin_d_ug || 0) * mult).toFixed(1);
-    els.calcium.value = Math.round((micros.calcium_mg || 0) * mult);
-    els.iron.value = ((micros.iron_mg || 0) * mult).toFixed(1);
+    const fiberVal = (micros.fiber_g || 0) * mult;
+    els.fiber.value = fiberVal > 0 ? fiberVal.toFixed(1) : '';
+    
+    const sugarVal = (micros.sugar_g || 0) * mult;
+    els.sugar.value = sugarVal > 0 ? sugarVal.toFixed(1) : '';
+    
+    const sodiumVal = (micros.sodium_mg || 0) * mult;
+    els.sodium.value = sodiumVal > 0 ? Math.round(sodiumVal) : '';
+    
+    const satFatVal = (micros.saturated_fat_g || 0) * mult;
+    els.sat_fat.value = satFatVal > 0 ? satFatVal.toFixed(1) : '';
+    
+    const cholVal = (micros.cholesterol_mg || 0) * mult;
+    els.cholesterol.value = cholVal > 0 ? Math.round(cholVal) : '';
+    
+    const potVal = (micros.potassium_mg || 0) * mult;
+    els.potassium.value = potVal > 0 ? Math.round(potVal) : '';
+    
+    const vitAVal = (micros.vitamin_a_ug || 0) * mult;
+    els.vit_a.value = vitAVal > 0 ? Math.round(vitAVal) : '';
+    
+    const vitCVal = (micros.vitamin_c_mg || 0) * mult;
+    els.vit_c.value = vitCVal > 0 ? vitCVal.toFixed(1) : '';
+    
+    const vitDVal = (micros.vitamin_d_ug || 0) * mult;
+    els.vit_d.value = vitDVal > 0 ? vitDVal.toFixed(1) : '';
+    
+    const calciumVal = (micros.calcium_mg || 0) * mult;
+    els.calcium.value = calciumVal > 0 ? Math.round(calciumVal) : '';
+    
+    const ironVal = (micros.iron_mg || 0) * mult;
+    els.iron.value = ironVal > 0 ? ironVal.toFixed(1) : '';
   }
 
   // UNIDIRECTIONAL BINDINGS (Eliminates feedback looping completely)
@@ -420,7 +449,8 @@ export function initLogFood(dashboardRef) {
       syncManualInputToModel();
       if (!manualCalories) {
         const p = parseFloat(els.protein.value) || 0; const c = parseFloat(els.carbs.value) || 0; const f = parseFloat(els.fat.value) || 0;
-        els.calories.value = Math.round((p * 4) + (c * 4) + (f * 9));
+        const calcCals = Math.round((p * 4) + (c * 4) + (f * 9));
+        els.calories.value = calcCals > 0 ? calcCals : '';
       }
     });
   });
@@ -469,7 +499,7 @@ export function initLogFood(dashboardRef) {
       triggerAI = true; 
     }
 
-    const macroObj = { protein_g: parseFloat(els.protein.value)/mult, carbs_g: parseFloat(els.carbs.value)/mult, fat_g: parseFloat(els.fat.value)/mult, calories: parseFloat(els.calories.value)/mult };
+    const macroObj = { protein_g: (parseFloat(els.protein.value) || 0)/mult, carbs_g: (parseFloat(els.carbs.value) || 0)/mult, fat_g: (parseFloat(els.fat.value) || 0)/mult, calories: (parseFloat(els.calories.value) || 0)/mult };
     
     const foodId = await db.foods.add({
       name, source: finalSource, usda_fdc_id: currentFood.usda_fdc_id || null,
@@ -515,7 +545,7 @@ export function initLogFood(dashboardRef) {
     }
 
     let foodId = currentFood.id || null;
-    const macroObj = { protein_g: parseFloat(els.protein.value)/mult, carbs_g: parseFloat(els.carbs.value)/mult, fat_g: parseFloat(els.fat.value)/mult, calories: parseFloat(els.calories.value)/mult };
+    const macroObj = { protein_g: (parseFloat(els.protein.value) || 0)/mult, carbs_g: (parseFloat(els.carbs.value) || 0)/mult, fat_g: (parseFloat(els.fat.value) || 0)/mult, calories: (parseFloat(els.calories.value) || 0)/mult };
     
     if (!foodId && isLibrarySave) {
       foodId = await db.foods.add({
@@ -534,12 +564,12 @@ export function initLogFood(dashboardRef) {
       food_id: foodId, food_name: name, serving_name: els.serving_unit.value.trim(),
       base_unit: els.base_unit.value, emoji: userEmoji,
       servings: mult, serving_size_g: parseFloat(els.total_g.value),
-      macros: { protein_g: parseFloat(els.protein.value), carbs_g: parseFloat(els.carbs.value), fat_g: parseFloat(els.fat.value), calories: parseFloat(els.calories.value) },
+      macros: { protein_g: parseFloat(els.protein.value) || 0, carbs_g: parseFloat(els.carbs.value) || 0, fat_g: parseFloat(els.fat.value) || 0, calories: parseFloat(els.calories.value) || 0 },
       micros: {
-        fiber_g: parseFloat(els.fiber.value), sugar_g: parseFloat(els.sugar.value), sodium_mg: parseFloat(els.sodium.value),
-        saturated_fat_g: parseFloat(els.sat_fat.value), cholesterol_mg: parseFloat(els.cholesterol.value), potassium_mg: parseFloat(els.potassium.value),
-        vitamin_a_ug: parseFloat(els.vit_a.value), vitamin_c_mg: parseFloat(els.vit_c.value), vitamin_d_ug: parseFloat(els.vit_d.value),
-        calcium_mg: parseFloat(els.calcium.value), iron_mg: parseFloat(els.iron.value)
+        fiber_g: parseFloat(els.fiber.value) || 0, sugar_g: parseFloat(els.sugar.value) || 0, sodium_mg: parseFloat(els.sodium.value) || 0,
+        saturated_fat_g: parseFloat(els.sat_fat.value) || 0, cholesterol_mg: parseFloat(els.cholesterol.value) || 0, potassium_mg: parseFloat(els.potassium.value) || 0,
+        vitamin_a_ug: parseFloat(els.vit_a.value) || 0, vitamin_c_mg: parseFloat(els.vit_c.value) || 0, vitamin_d_ug: parseFloat(els.vit_d.value) || 0,
+        calcium_mg: parseFloat(els.calcium.value) || 0, iron_mg: parseFloat(els.iron.value) || 0
       }
     };
 

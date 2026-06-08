@@ -156,47 +156,74 @@
           </div>
 
           <div class="form-grid" style="margin-top: 0;">
-            <div class="input-group full-width">
-              <label>Food Name</label>
-              <div style="display: flex; gap: 0.5rem;">
-                <button id="log-emoji-btn" class="btn-secondary" style="width: 60px; font-size: 1.2rem; padding: 0;" title="Select Emoji">🍽️</button>
-                <input type="text" id="log-name" placeholder="e.g. Chicken breast (optional for quick logs)" style="flex: 1;">
+            <div class="input-group full-width" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+              <button id="log-emoji-btn" class="btn-secondary" style="width: 60px; height: 52px; font-size: 1.2rem; padding: 0; margin-bottom: 0; flex-shrink: 0;" title="Select Emoji">🍽️</button>
+              <div class="floating-label-group" style="flex: 1;">
+                <input type="text" id="log-name" placeholder=" ">
+                <label for="log-name">Food Name (optional for quick logs)</label>
               </div>
             </div>
             
-            <div class="input-group">
-              <label id="serving-size-label">Base Serving Size</label>
-              <div style="display: flex; gap: 0.5rem;">
-                <input type="number" id="log-serving-g" value="100" style="flex: 1;">
-                <select id="log-base-unit" style="width: 70px; padding: 0.5rem 0.2rem; text-align: center;">
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                </select>
+            <div class="input-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+              <div class="floating-label-group" style="flex: 1;">
+                <input type="number" id="log-serving-g" placeholder=" ">
+                <label id="serving-size-label" for="log-serving-g">Base Serving Size</label>
               </div>
+              <select id="log-base-unit" style="width: 70px; height: 52px; padding: 0.5rem 0.2rem; text-align: center; margin-bottom: 0; flex-shrink: 0;">
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+              </select>
             </div>
 
-            <div class="input-group"><label>Serving Unit Name (optional)</label><input type="text" id="log-serving-unit" placeholder="e.g. slice, cup, bowl"></div>
-            <div class="input-group"><label id="serving-multiplier-label">Servings</label><input type="number" id="log-servings" value="1" step="0.01"></div>
-            <div class="input-group"><label id="serving-total-g-label">Total Amount</label><input type="number" id="log-total-g" value="100" step="1"></div>
-            <div class="input-group"><label>Protein (g)</label><input type="number" id="log-protein" class="macro-input" value="0" step="0.1"></div>
-            <div class="input-group"><label>Carbs (g)</label><input type="number" id="log-carbs" class="macro-input" value="0" step="0.1"></div>
-            <div class="input-group"><label>Fat (g)</label><input type="number" id="log-fat" class="macro-input" value="0" step="0.1"></div>
-            <div class="input-group"><label>Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label><input type="number" id="log-calories" value="0"></div>
+            <div class="floating-label-group">
+              <input type="text" id="log-serving-unit" placeholder=" ">
+              <label for="log-serving-unit">Serving Unit Name (optional)</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-servings" placeholder=" " step="0.01">
+              <label id="serving-multiplier-label" for="log-servings">Servings</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-total-g" placeholder=" " step="1">
+              <label id="serving-total-g-label" for="log-total-g">Total Amount</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-protein" class="macro-input" placeholder=" " step="0.1">
+              <label for="log-protein">Protein (g)</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-carbs" class="macro-input" placeholder=" " step="0.1">
+              <label for="log-carbs">Carbs (g)</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-fat" class="macro-input" placeholder=" " step="0.1">
+              <label for="log-fat">Fat (g)</label>
+            </div>
+            
+            <div class="floating-label-group">
+              <input type="number" id="log-calories" placeholder=" ">
+              <label for="log-calories">Calories <span id="cal-badge" class="badge hidden" style="margin-left: 5px;">✎ manual</span></label>
+            </div>
           </div>
 
           <button id="btn-toggle-micros" class="btn-link mt-1">Show Micronutrients ▾</button>
           <div id="micros-panel" class="hidden mt-1 form-grid panel-transparent">
-            <div class="input-group"><label>Fiber (g)</label><input type="number" id="log-fiber" step="0.1" value="0"></div>
-            <div class="input-group"><label>Sugar (g)</label><input type="number" id="log-sugar" step="0.1" value="0"></div>
-            <div class="input-group"><label>Sodium (mg)</label><input type="number" id="log-sodium" step="1" value="0"></div>
-            <div class="input-group"><label>Saturated Fat (g)</label><input type="number" id="log-saturated-fat" step="0.1" value="0"></div>
-            <div class="input-group"><label>Cholesterol (mg)</label><input type="number" id="log-cholesterol" step="1" value="0"></div>
-            <div class="input-group"><label>Potassium (mg)</label><input type="number" id="log-potassium" step="1" value="0"></div>
-            <div class="input-group"><label>Vitamin A (ug)</label><input type="number" id="log-vitamin-a" step="1" value="0"></div>
-            <div class="input-group"><label>Vitamin C (mg)</label><input type="number" id="log-vitamin-c" step="0.1" value="0"></div>
-            <div class="input-group"><label>Vitamin D (ug)</label><input type="number" id="log-vitamin-d" step="0.1" value="0"></div>
-            <div class="input-group"><label>Calcium (mg)</label><input type="number" id="log-calcium" step="1" value="0"></div>
-            <div class="input-group"><label>Iron (mg)</label><input type="number" id="log-iron" step="0.1" value="0"></div>
+            <div class="floating-label-group"><input type="number" id="log-fiber" step="0.1" placeholder=" "><label for="log-fiber">Fiber (g)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-sugar" step="0.1" placeholder=" "><label for="log-sugar">Sugar (g)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-sodium" step="1" placeholder=" "><label for="log-sodium">Sodium (mg)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-saturated-fat" step="0.1" placeholder=" "><label for="log-saturated-fat">Saturated Fat (g)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-cholesterol" step="1" placeholder=" "><label for="log-cholesterol">Cholesterol (mg)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-potassium" step="1" placeholder=" "><label for="log-potassium">Potassium (mg)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-vitamin-a" step="1" placeholder=" "><label for="log-vitamin-a">Vitamin A (ug)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-vitamin-c" step="0.1" placeholder=" "><label for="log-vitamin-c">Vitamin C (mg)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-vitamin-d" step="0.1" placeholder=" "><label for="log-vitamin-d">Vitamin D (ug)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-calcium" step="1" placeholder=" "><label for="log-calcium">Calcium (mg)</label></div>
+            <div class="floating-label-group"><input type="number" id="log-iron" step="0.1" placeholder=" "><label for="log-iron">Iron (mg)</label></div>
           </div>
 
           <div class="flex-between mt-2">
