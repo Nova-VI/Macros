@@ -58,6 +58,13 @@ export function setTheme(theme) {
   localStorage.setItem('app_theme', theme);
 }
 
+export function getNavbar() {
+  return localStorage.getItem('app_navbar') || 'top';
+}
+export function setNavbar(navbar) {
+  localStorage.setItem('app_navbar', navbar);
+}
+
 export async function exportDatabaseJSON() {
   const data = {
     foods: await db.foods.toArray(),

@@ -12,10 +12,14 @@
         localStorage.setItem('app_theme', 'modern');
       }
       document.documentElement.dataset.theme = theme;
+      
+      let navbar = localStorage.getItem('app_navbar') || 'top';
+      document.documentElement.dataset.navbar = navbar;
     })();
   </script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/theme-modern.css">
+  <link rel="stylesheet" href="css/theme-feane.css">
   <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -54,13 +58,34 @@
   <header>
     <div class="logo">MacroTracker</div>
     <nav>
-      <button class="nav-btn active" data-target="dashboard">Dashboard</button>
-      <button class="nav-btn" data-target="log-food">Log Food</button>
-      <button class="nav-btn" data-target="recipe-composer">Recipe</button>
-      <button class="nav-btn" data-target="weight-tracker">Weight</button>
-      <button class="nav-btn" data-target="stats">Stats</button>
-      <button class="nav-btn" data-target="library">Library</button>
-      <button class="nav-btn" data-target="settings">Settings</button>
+      <button class="nav-btn active" data-target="dashboard">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-btn" data-target="log-food">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>Log Food</span>
+      </button>
+      <button class="nav-btn" data-target="recipe-composer">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14h6"/><path d="M9 10h6"/><path d="M9 18h6"/></svg>
+        <span>Recipe</span>
+      </button>
+      <button class="nav-btn" data-target="weight-tracker">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span>Weight</span>
+      </button>
+      <button class="nav-btn" data-target="stats">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span>Stats</span>
+      </button>
+      <button class="nav-btn" data-target="library">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        <span>Library</span>
+      </button>
+      <button class="nav-btn" data-target="settings">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
     </nav>
   </header>
 
@@ -413,6 +438,14 @@
             <select id="settings-theme">
               <option value="default">Default Theme</option>
               <option value="modern">Modern Glass Theme</option>
+              <option value="feane">Feane Theme</option>
+            </select>
+          </div>
+          <div class="input-group full-width">
+            <label>Navbar Layout</label>
+            <select id="settings-navbar-layout">
+              <option value="top">Top</option>
+              <option value="left">Left</option>
             </select>
           </div>
         </div>

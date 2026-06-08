@@ -128,11 +128,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const currentBtn = e.currentTarget;
       navBtns.forEach(b => b.classList.remove('active'));
       pages.forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
 
-      const targetId = e.target.getAttribute('data-target');
-      e.target.classList.add('active');
+      const targetId = currentBtn.getAttribute('data-target');
+      currentBtn.classList.add('active');
       
       const targetPage = document.getElementById(targetId);
       if (targetPage) { targetPage.classList.remove('hidden'); targetPage.classList.add('active'); }

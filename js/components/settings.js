@@ -1,15 +1,22 @@
-import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded, getGithubApiKey, setGithubApiKey, getTheme, setTheme } from '../db.js';
+import { db, setApiKey, exportDatabaseJSON, importDatabaseJSON, getIncludeBranded, setIncludeBranded, getGithubApiKey, setGithubApiKey, getTheme, setTheme, getNavbar, setNavbar } from '../db.js';
 
 export function initSettings() {
   const calcMethodSelect = document.getElementById('goal-calc-method');
   const smartCalcPanel = document.getElementById('smart-calc-panel');
   const warningEl = document.getElementById('extreme-diet-warning');
   const themeSelect = document.getElementById('settings-theme');
+  const navbarSelect = document.getElementById('settings-navbar-layout');
 
   themeSelect.addEventListener('change', (e) => {
     const newTheme = e.target.value;
     setTheme(newTheme);
     document.documentElement.dataset.theme = newTheme;
+  });
+
+  navbarSelect.addEventListener('change', (e) => {
+    const newNavbar = e.target.value;
+    setNavbar(newNavbar);
+    document.documentElement.dataset.navbar = newNavbar;
   });
 
   const calcInputs = {
@@ -99,6 +106,7 @@ export function initSettings() {
     if (ghKey) document.getElementById('settings-github-key').value = ghKey;
 
     themeSelect.value = getTheme();
+    if(navbarSelect) navbarSelect.value = getNavbar();
 
     performLiveCalculations();
   }
