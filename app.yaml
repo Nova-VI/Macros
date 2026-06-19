@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: macros-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: macros
+  template:
+    metadata:
+      labels:
+        app: macros
+    spec:
+      containers:
+      - name: macros-container
+        image: macros-app:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: macros-service
+spec:
+  type: NodePort
+  selector:
+    app: macros
+  ports:
+    - port: 80
+      targetPort: 80
