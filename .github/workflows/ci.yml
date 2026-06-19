@@ -1,16 +1,36 @@
-name: Macros App CI Pipeline
+name: Macros App DevSecOps Pipeline
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  security-scan:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Run Trivy FS Scan (Code & IaC)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL'
+
     - name: Build Docker Image
       run: |
         docker build -t macros-app:${{ github.sha }} .
+
+    - name: Run Trivy Image Scan (Container Vulnerabilities)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'macros-app:${{ github.sha }}'
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL,HIGH'
